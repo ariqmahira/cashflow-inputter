@@ -1,6 +1,6 @@
 # Cashflow Inputter
 
-Mobile-first PWA for logging daily expenses & income into a Google Sheets workbook (the existing `Cashflow Bab & Bi` layout — monthly sheets, expense columns `H..L`, income columns `N..Q`, SUM totals in row 30).
+Mobile-first PWA for logging daily expenses & income into a Google Sheets workbook (the existing `Cashflow Bab & Bi` layout — monthly sheets, expense columns `H..L`, income columns `N..Q`, dynamic totals row detection).
 
 - **Stack:** Vite + React + TypeScript + Tailwind, Google Identity Services (browser OAuth), Google Sheets API v4, vite-plugin-pwa.
 - **Hosting:** Deploy to Vercel/Netlify (free). Install on iOS/Android via "Add to Home Screen".
