@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom';
 import { RecentEntries } from '../RecentEntries/RecentEntries';
 import { MonthTotals } from '../Totals/MonthTotals';
 import { MONTHS_ID } from '../../config';
-import { todayLocal } from '../../sheets/dates';
 
 const FMT_MONTH = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' });
 
@@ -20,11 +19,6 @@ function parseSlug(slug: string | undefined): Date | null {
 export function MonthDetail() {
   const { slug } = useParams<{ slug: string }>();
   const target = useMemo(() => parseSlug(slug), [slug]);
-  const today = todayLocal();
-  const isCurrentMonth =
-    target != null &&
-    target.getFullYear() === today.getFullYear() &&
-    target.getMonth() === today.getMonth();
 
   if (!target) {
     return (
@@ -52,8 +46,8 @@ export function MonthDetail() {
 
       <RecentEntries
         targetMonth={target}
-        readOnly={!isCurrentMonth}
-        headerLabel={`${FMT_MONTH.format(target)}${isCurrentMonth ? '' : ' · read-only'}`}
+        readOnly={false}
+        headerLabel={FMT_MONTH.format(target)}
       />
 
       <div className="px-4 pb-4 max-w-md mx-auto">
