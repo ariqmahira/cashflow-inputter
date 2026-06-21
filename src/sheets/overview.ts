@@ -1,3 +1,4 @@
+import { sheetTitleFor } from '../config';
 import { dateToSerial, serialToDate } from './dates';
 import type { SheetMeta, SheetsClient, SpreadsheetMeta } from './sheetsClient';
 
@@ -172,4 +173,205 @@ export async function appendOverviewRow(
       `='${safeTitle}'!C5`,
     ],
   ]);
+}
+
+/** Convert a 0-indexed column number to an A1 column letter (0 -> A, 26 -> AA). */
+function colLetter(index0: number): string {
+  let n = index0;
+  let s = '';
+  do {
+    s = String.fromCharCode(65 + (n % 26)) + s;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return s;
+}
+
+/** A serial that plausibly represents a real date in this app's lifetime (~2000..2100). */
+function isDateSerial(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 36_500 && v <= 73_050;
+}
+
+/** A horizontal run of monthly date headers found in the detail (column-based) table. */
+type DetailHeader = {
+  /** 1-indexed header row. */
+  headerRow: number;
+  /** 0-indexed column of the first month in the run. */
+  firstMonthCol: number;
+  /** 0-indexed column of the last (rightmost) month in the run. */
+  lastMonthCol: number;
+  /** Date serials of each month column, left-to-right. */
+  serials: number[];
+};
+
+const DETAIL_SCAN_RANGE = 'A1:CZ200';
+
+/**
+ * Find the column-based detail table's header row: the row containing the longest
+ * horizontal run of consecutive month date-serials (each ~28-31 apart). Returns null
+ * if no run of length >= 2 is found. Deliberately ignores the row-based summary
+ * (B25:E120), whose dates form vertical runs (horizontal run length 1).
+ */
+function findDetailHeader(grid: (string | number)[][]): DetailHeader | null {
+  let best: DetailHeader | null = null;
+  for (let r = 0; r < grid.length; r++) {
+    const row = grid[r] ?? [];
+    let c = 0;
+    while (c < row.length) {
+      if (!isDateSerial(row[c])) {
+        c++;
+        continue;
+      }
+      // Extend a run of monthly-spaced serials.
+      const start = c;
+      const serials: number[] = [row[c] as number];
+      let next = c + 1;
+      while (next < row.length && isDateSerial(row[next])) {
+        const delta = (row[next] as number) - serials[serials.length - 1];
+        if (delta >= 27 && delta <= 32) {
+          serials.push(row[next] as number);
+          next++;
+        } else {
+          break;
+        }
+      }
+      if (serials.length >= 2 && (!best || serials.length > best.serials.length)) {
+        best = {
+          headerRow: r + 1,
+          firstMonthCol: start,
+          lastMonthCol: start + serials.length - 1,
+          serials,
+        };
+      }
+      c = next > c ? next : c + 1;
+    }
+  }
+  return best;
+}
+
+function isSameMonthSerial(serial: number, date: Date): boolean {
+  return isSameMonth(serialToDate(serial), date);
+}
+
+/**
+ * Append a new month *column* to the column-based detail table on the Overview sheet.
+ * Inserts a blank column before the trailing (totals/average) column, copies the
+ * previous month column's formatting, and writes its formulas re-pointed at the new
+ * month sheet. Idempotent: skips if a column for the target month already exists.
+ * Bounded to the table's own rows so the row-based summary (B25:E120) is untouched.
+ */
+export async function appendOverviewMonthColumn(
+  client: SheetsClient,
+  spreadsheetId: string,
+  args: { date: Date },
+): Promise<void> {
+  const meta = await client.getSpreadsheet(spreadsheetId);
+  const sheet = findOverviewSheet(meta);
+  if (!sheet) {
+    console.warn('Overview sheet not found; skipping detail-column append.');
+    return;
+  }
+
+  const grid = await client.getValues(
+    spreadsheetId,
+    `'${sheet.title}'!${DETAIL_SCAN_RANGE}`,
+    { valueRenderOption: 'UNFORMATTED_VALUE' },
+  );
+  const header = findDetailHeader(grid);
+  if (!header) {
+    console.warn('Could not locate the detail table header on Overview; skipping detail-column append.');
+    return;
+  }
+
+  // Already present for this month?
+  if (header.serials.some((s) => isSameMonthSerial(s, args.date))) return;
+
+  const prevSerial = header.serials[header.serials.length - 1];
+  const prevDate = serialToDate(prevSerial);
+  // Only append the newest month at the right; don't insert mid-table.
+  if (args.date.getFullYear() * 12 + args.date.getMonth() <= prevDate.getFullYear() * 12 + prevDate.getMonth()) {
+    console.warn(
+      `Target month ${sheetTitleFor(args.date)} is not newer than the last detail column ${sheetTitleFor(prevDate)}; skipping detail-column append.`,
+    );
+    return;
+  }
+
+  // Determine the table's bottom row by scanning the previous-month column downward.
+  const prevCol = header.lastMonthCol;
+  let lastDataRow = header.headerRow;
+  for (let r = header.headerRow - 1; r < grid.length; r++) {
+    const cell = grid[r]?.[prevCol];
+    if (cell !== '' && cell != null) lastDataRow = r + 1;
+  }
+
+  const sheetId = sheet.sheetId;
+  const newCol = header.lastMonthCol + 1; // 0-indexed: position of the (current) trailing column.
+
+  // 1) Insert a blank column before the trailing column, bounded to the table rows.
+  // 2) Copy the previous-month column's formatting into the new blank column.
+  await client.batchUpdate(spreadsheetId, [
+    {
+      insertRange: {
+        range: {
+          sheetId,
+          startRowIndex: header.headerRow - 1,
+          endRowIndex: lastDataRow,
+          startColumnIndex: newCol,
+          endColumnIndex: newCol + 1,
+        },
+        shiftDimension: 'COLUMNS',
+      },
+    },
+    {
+      copyPaste: {
+        source: {
+          sheetId,
+          startRowIndex: header.headerRow - 1,
+          endRowIndex: lastDataRow,
+          startColumnIndex: prevCol,
+          endColumnIndex: prevCol + 1,
+        },
+        destination: {
+          sheetId,
+          startRowIndex: header.headerRow - 1,
+          endRowIndex: lastDataRow,
+          startColumnIndex: newCol,
+          endColumnIndex: newCol + 1,
+        },
+        pasteType: 'PASTE_FORMAT',
+      },
+    },
+  ]);
+
+  // Read the previous-month column's formulas and re-point them to the new month.
+  const prevColLetter = colLetter(prevCol);
+  const newColLetter = colLetter(newCol);
+  const bandRange = `'${sheet.title}'!${prevColLetter}${header.headerRow}:${prevColLetter}${lastDataRow}`;
+  const prevValues = await client.getValues(spreadsheetId, bandRange, {
+    valueRenderOption: 'FORMULA',
+  });
+
+  const prevTitle = sheetTitleFor(prevDate);
+  const newTitle = sheetTitleFor(args.date);
+  const firstOfMonth = new Date(args.date.getFullYear(), args.date.getMonth(), 1);
+
+  const out: (string | number | null)[][] = [];
+  for (let i = 0; i < lastDataRow - header.headerRow + 1; i++) {
+    if (i === 0) {
+      // Header cell: the new month's date.
+      out.push([dateToSerial(firstOfMonth)]);
+      continue;
+    }
+    const cell = prevValues[i]?.[0];
+    if (typeof cell === 'string') {
+      out.push([cell.split(`'${prevTitle}'`).join(`'${newTitle}'`)]);
+    } else {
+      out.push([cell == null ? null : cell]);
+    }
+  }
+
+  await client.updateValues(
+    spreadsheetId,
+    `'${sheet.title}'!${newColLetter}${header.headerRow}:${newColLetter}${lastDataRow}`,
+    out,
+  );
 }

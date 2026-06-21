@@ -1,6 +1,6 @@
 import { MONTHS_ID, sheetTitleFor, DATA_RANGE } from '../config';
 import type { SheetMeta, SheetsClient } from './sheetsClient';
-import { appendOverviewRow } from './overview';
+import { appendOverviewMonthColumn, appendOverviewRow } from './overview';
 
 export type MonthSheetInfo = {
   title: string;
@@ -128,6 +128,13 @@ export async function ensureMonthSheet(
     });
   } catch (err) {
     console.warn('Failed to append Overview row for', newTitle, err);
+  }
+
+  // Best-effort: also add a column to the column-based detail table on the Overview sheet.
+  try {
+    await appendOverviewMonthColumn(client, spreadsheetId, { date: target });
+  } catch (err) {
+    console.warn('Failed to append Overview detail column for', newTitle, err);
   }
 
   return { sheet: newSheetMeta, created: true, totalsRow };
