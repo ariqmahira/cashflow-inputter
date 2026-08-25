@@ -136,7 +136,20 @@ export function inferMissingDates(
   dates: (PlainDate | null)[],
   sheetMonth: number,
   sheetYear: number,
+  /**
+   * Dates from elsewhere on the same sheet — in practice the other column.
+   *
+   * The expense and income blocks sit side by side, and a sheet can have a fully undated
+   * income column next to an expense column full of real dates. Without this, those rows
+   * fall all the way through to the first of the month, which is a date that matches
+   * nothing: `Juli 2026`'s two kas rows landed on 1 July when every other month's arrived
+   * between the 18th and the 26th.
+   */
+  sheetDates: (PlainDate | null)[] = [],
 ): DateResolution[] {
+  const known = [...dates, ...sheetDates].filter((d): d is PlainDate => Boolean(d)).sort();
+  // The median of what the sheet does know, which beats the 1st of the month by a distance.
+  const elsewhere = known.length ? known[Math.floor(known.length / 2)] : null;
   const fallback = toPlainDate(sheetYear, sheetMonth, 1);
 
   return dates.map((date, idx) => {
@@ -158,10 +171,19 @@ export function inferMissingDates(
     }
 
     if (up === -1 && down === -1) {
+      // Nothing dated in this column. Borrow from the rest of the sheet before resorting to
+      // the first of the month, which is a date the data never actually produces.
+      if (elsewhere) {
+        return {
+          date: elsewhere,
+          inferred: true,
+          note: 'no dated row in this column; took the median date from elsewhere on the sheet',
+        };
+      }
       return {
         date: fallback,
         inferred: true,
-        note: `no dated row in sheet; fell back to first of ${sheetMonth}/${sheetYear}`,
+        note: `nothing dated anywhere on the sheet; fell back to first of ${sheetMonth}/${sheetYear}`,
       };
     }
 

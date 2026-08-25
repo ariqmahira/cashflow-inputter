@@ -109,11 +109,25 @@ describe('inferMissingDates', () => {
     expect(out[1]!.date).toBe('2024-10-19');
   });
 
+  it('borrows from the other column when this one has no dates at all', () => {
+    // `Juli 2026`: the income column was entirely undated beside an expense column full of
+    // real July dates, and both kas rows landed on 1 July as a result.
+    const out = inferMissingDates([null, null], 7, 2026, ['2026-07-14', '2026-07-24', '2026-07-30']);
+    expect(out[0]!.date).toBe('2026-07-24');
+    expect(out[0]!.inferred).toBe(true);
+    expect(out[0]!.note).toContain('elsewhere on the sheet');
+  });
+
+  it('prefers a neighbour in its own column over the other column', () => {
+    const out = inferMissingDates(['2026-07-20', null], 7, 2026, ['2026-07-01']);
+    expect(out[1]!.date).toBe('2026-07-20');
+  });
+
   it('falls back to the first of the sheet month only when nothing is dated', () => {
     // `April 2026`: all thirteen rows undated.
     const out = inferMissingDates([null, null, null], 4, 2026);
     expect(out.every((r) => r.date === toPlainDate(2026, 4, 1))).toBe(true);
     expect(out.every((r) => r.inferred)).toBe(true);
-    expect(out[0]!.note).toContain('no dated row');
+    expect(out[0]!.note).toContain('nothing dated anywhere');
   });
 });

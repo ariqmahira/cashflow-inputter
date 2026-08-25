@@ -112,11 +112,18 @@ export function buildMigration(wb: ParsedWorkbook): MigrationResult {
     // 3. Dates, per sheet and in row order — inference reads neighbouring rows.
     const expenseDates = repairAutofillRuns(sheet.expenses.map((e) => parseDateCell(e.date)));
     autofillRepaired += expenseDates.repaired.size;
-    const expenseResolved = inferMissingDates(expenseDates.dates, sheet.month, sheet.year);
 
     const incomeDates = repairAutofillRuns(sheet.incomes.map((i) => parseDateCell(i.date)));
     autofillRepaired += incomeDates.repaired.size;
-    const incomeResolved = inferMissingDates(incomeDates.dates, sheet.month, sheet.year);
+
+    // Each column can borrow from the other: a sheet may have a fully undated income column
+    // sitting beside an expense column full of real dates.
+    const expenseResolved = inferMissingDates(
+      expenseDates.dates, sheet.month, sheet.year, incomeDates.dates,
+    );
+    const incomeResolved = inferMissingDates(
+      incomeDates.dates, sheet.month, sheet.year, expenseDates.dates,
+    );
 
     sheet.expenses.forEach((raw, i) => {
       const name = typeof raw.name === 'string' ? tidyDisplay(raw.name) : '';
