@@ -1,9 +1,13 @@
 /**
  * Cycles — the budget period.
  *
- * The kas refills when the two of them top it up, historically around the 24th–26th, so
- * budgets run anchor-day to anchor-day rather than over a calendar month. A cycle anchored
- * on the 25th runs 25 Jan to 24 Feb.
+ * The kas refills when the two of them top it up, historically anywhere from the 18th to the
+ * 26th, so budgets run anchor-day to anchor-day rather than over a calendar month. A cycle
+ * anchored on the 18th runs 18 Jan to 17 Feb.
+ *
+ * The anchor sits at the early end of that spread on purpose. A top-up arriving *before* the
+ * anchor funds the cycle that is ending rather than the one starting, which is the wrong way
+ * round — so the anchor belongs below the earliest top-up, not on the most common one.
  *
  * The anchor is clamped to 28 on purpose. An anchor of 30 or 31 would have no valid start
  * date in February, and every rule for handling that ("clamp to the last day", "skip the
@@ -19,7 +23,17 @@ import {
   type PlainDate,
 } from './plain-date.ts';
 
-export const DEFAULT_ANCHOR_DAY = 25;
+/**
+ * The 18th, not the 25th.
+ *
+ * The 25th is the single most common top-up day, but 32 of 57 top-ups land before it — and
+ * with an anchor of 25 those fund the cycle that is ending rather than the one starting. At
+ * 18 every top-up on record falls inside the cycle it pays for.
+ *
+ * This is only the fallback for when settings have not loaded; the stored
+ * `settings.cycle_anchor_day` is the real answer.
+ */
+export const DEFAULT_ANCHOR_DAY = 18;
 export const MAX_ANCHOR_DAY = 28;
 
 export type Cycle = {

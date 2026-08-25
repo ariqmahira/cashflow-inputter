@@ -21,17 +21,32 @@ import { formatIdr } from '@/lib/money';
 type Props = {
   /** Money left in the pool right now. May be negative before a top-up lands. */
   balance: number;
-  /** What the pool held at the start of this cycle, plus contributions since. */
-  cycleStartingFunds: number;
+  /** Put into the pool this cycle. */
+  contributed: number;
+  /** Non-reimbursed spending this cycle. */
+  spent: number;
   /** 0–1 through the current cycle. */
   progress: number;
 };
 
-export function KasJar({ balance, cycleStartingFunds, progress }: Props) {
-  const empty = cycleStartingFunds <= 0;
-  const fill = empty ? 0 : clamp01(balance / cycleStartingFunds);
+export function KasJar({ balance, contributed, spent, progress }: Props) {
+  /**
+   * The jar measures what is left against **this cycle's funding**, not against what was
+   * available to spend.
+   *
+   * Those differ whenever a cycle opens in deficit. On 25 Aug 2026 the pool held 89.022
+   * after 1.200.000 went in — because 1.1M of the new kas immediately covered the previous
+   * cycle's overspend. Measuring against "balance + spent" made that read as a full jar and
+   * "masih aman", when the truth was 89.022 to last 23 days.
+   */
+  const funding = contributed > 0 ? contributed : balance + spent;
+  const empty = funding <= 0;
+  const fill = empty ? 0 : clamp01(balance / funding);
   const pace = 1 - clamp01(progress);
   const behind = fill < pace - 0.02;
+
+  // How much of this cycle's kas was swallowed by the last one before any of it was spent.
+  const carried = Math.max(0, funding - (balance + spent));
 
   const tone = balance < 0 ? 'teler' : behind ? 'gula' : 'pandan';
   // Written out in full rather than interpolated: Tailwind extracts class names statically,
@@ -121,9 +136,13 @@ export function KasJar({ balance, cycleStartingFunds, progress }: Props) {
         <p className="mt-1 text-sm text-ink-soft">
           {empty
             ? 'Belum ada kas masuk siklus ini.'
-            : behind
-              ? 'Lebih cepat dari biasanya.'
-              : 'Masih aman sampai kas berikutnya.'}
+            : carried > 0 && spent === 0
+              ? // Nothing spent yet, but the jar is already low: the shortfall came from the
+                // previous cycle, and saying "spending fast" would blame the wrong month.
+                `${formatIdr(carried)} kas bulan ini kepakai nutup siklus sebelumnya.`
+              : behind
+                ? 'Lebih cepat dari biasanya.'
+                : 'Masih aman sampai kas berikutnya.'}
         </p>
       </div>
     </div>

@@ -4,15 +4,28 @@ import {
   budgetStatus,
   burnRate,
   clampAnchorDay,
-  cycleFor,
+  cycleFor as cycleForAnchor,
   cycleLengthDays,
   cycleProgress,
   isWithinCycle,
-  nextCycle,
-  previousCycle,
+  nextCycle as nextCycleAnchor,
+  previousCycle as previousCycleAnchor,
   projectedRunDry,
+  DEFAULT_ANCHOR_DAY,
 } from './cycle.ts';
 import { addDays } from './plain-date.ts';
+
+/**
+ * These exercise the cycle arithmetic against a fixed anchor of 25, which is what the
+ * fixture dates below assume. The app's own default anchor is a separate decision and is
+ * asserted on its own.
+ */
+const TEST_ANCHOR = 25;
+const cycleFor = (date: string, anchor: number = TEST_ANCHOR) => cycleForAnchor(date, anchor);
+const nextCycle = (c: Parameters<typeof nextCycleAnchor>[0], anchor: number = TEST_ANCHOR) =>
+  nextCycleAnchor(c, anchor);
+const previousCycle = (c: Parameters<typeof previousCycleAnchor>[0], anchor: number = TEST_ANCHOR) =>
+  previousCycleAnchor(c, anchor);
 
 describe('cycleFor', () => {
   it('starts the cycle on the anchor day', () => {
@@ -89,6 +102,12 @@ describe('cycleFor', () => {
 });
 
 describe('anchor day', () => {
+  it('defaults to the 18th, when most top-ups actually land', () => {
+    // 32 of 57 top-ups arrive before the 25th, so a 25th anchor credits them to the cycle
+    // that is ending rather than the one they fund.
+    expect(DEFAULT_ANCHOR_DAY).toBe(18);
+  });
+
   it('clamps above 28, because the 29th does not exist every February', () => {
     expect(clampAnchorDay(31)).toBe(28);
     expect(clampAnchorDay(29)).toBe(28);
@@ -97,7 +116,7 @@ describe('anchor day', () => {
   it('clamps below 1 and falls back on nonsense', () => {
     expect(clampAnchorDay(0)).toBe(1);
     expect(clampAnchorDay(-5)).toBe(1);
-    expect(clampAnchorDay(Number.NaN)).toBe(25);
+    expect(clampAnchorDay(Number.NaN)).toBe(DEFAULT_ANCHOR_DAY);
   });
 
   it('respects a configured anchor', () => {

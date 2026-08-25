@@ -35,10 +35,6 @@ export default function Beranda() {
   const runDry = projectedRunDry(balance, rate, today);
   const daysLeft = daysBetween(today, cycle.end);
 
-  // What the jar is measured against: the pool at the start of the cycle, plus anything put
-  // in since. Spending it all exactly empties the jar.
-  const startingFunds = balance + spent;
-
   const byCategory = spendingByCategory(entries, reimbursed, cycle);
   const top = categories
     .map((c) => ({ name: c.name, total: byCategory.get(c.id) ?? 0 }))
@@ -56,7 +52,7 @@ export default function Beranda() {
   return (
     <Screen title="Beranda">
       <section className="rounded-card bg-surface p-5">
-        <KasJar balance={balance} cycleStartingFunds={startingFunds} progress={progress} />
+        <KasJar balance={balance} contributed={contributed} spent={spent} progress={progress} />
 
         <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-line pt-4 text-center">
           <Stat label="Terpakai" value={formatIdrShort(spent)} />
