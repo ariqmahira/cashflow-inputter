@@ -144,6 +144,24 @@ describe('outbox', () => {
     expect(await rejected()).toHaveLength(0);
   });
 
+  it('sends an item once even when two drains start together', async () => {
+    // Saving reloads the screen and then navigates, so two components mount and each starts
+    // a sync. Racing drains would both read the same queued item and both send it, recording
+    // the purchase twice.
+    await enqueue(expense('Chagee'));
+    await Promise.all([drain(), drain(), drain()]);
+    expect(sent).toEqual(['Chagee']);
+    expect(await pending()).toHaveLength(0);
+  });
+
+  it('still drains normally after a shared drain finishes', async () => {
+    await enqueue(expense('Chagee'));
+    await Promise.all([drain(), drain()]);
+    await enqueue(expense('Gocar'));
+    await drain();
+    expect(sent).toEqual(['Chagee', 'Gocar']);
+  });
+
   it('handles every kind of write', async () => {
     await enqueue({ id: '1', kind: 'delete', entryId: 'e1' });
     await enqueue({ id: '2', kind: 'correctDate', entryId: 'e2', date: '2026-08-01' });

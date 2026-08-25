@@ -111,13 +111,30 @@ async function send(item: Pending): Promise<void> {
 export type DrainResult = { sent: number; remaining: number; rejected: number };
 
 /**
+ * Only one drain runs at a time.
+ *
+ * Saving an entry reloads the current screen and then navigates, so two components mount and
+ * each starts a sync. Both would read the same queued item and both would send it — the
+ * ledger ends up with the purchase recorded twice. Sharing one in-flight drain makes the
+ * second caller wait for the first instead of racing it.
+ */
+let inFlight: Promise<DrainResult> | null = null;
+
+export function drain(): Promise<DrainResult> {
+  inFlight ??= drainOnce().finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+
+/**
  * Sends everything queued, oldest first.
  *
  * Stops at the first item that will not go, rather than skipping past it, so ordering holds.
  * An item that has failed `MAX_ATTEMPTS` times is moved aside as rejected — it is reported
  * to the user rather than retried forever or silently dropped.
  */
-export async function drain(): Promise<DrainResult> {
+async function drainOnce(): Promise<DrainResult> {
   const state = await read();
   let sent = 0;
 
