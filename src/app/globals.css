@@ -1,0 +1,113 @@
+@import 'tailwindcss';
+
+/**
+ * Kas — design tokens.
+ *
+ * The palette comes from es campur and warung packaging rather than fintech: pandan green,
+ * es teler pink, gula melaka amber, on a paper that is tinted green rather than cream.
+ * Light-first, because this app is used in Jakarta malls in the middle of the day.
+ */
+
+@theme {
+  /* Surfaces */
+  --color-paper: #f5f7f0;
+  --color-surface: #ffffff;
+  --color-sunken: #eaefe3;
+  --color-line: #dbe3d2;
+
+  /* Ink */
+  --color-ink: #23301f;
+  --color-ink-soft: #5b6b56;
+  --color-ink-faint: #8a9a85;
+
+  /* Accents */
+  --color-pandan: #3f8f5b;
+  --color-pandan-deep: #2f6d45;
+  --color-pandan-wash: #dfeee4;
+  --color-teler: #ef6f84;
+  --color-teler-wash: #fde3e7;
+  --color-gula: #c97b3c;
+  --color-gula-wash: #fbeada;
+
+  --radius-card: 1.25rem;
+  --radius-pill: 999px;
+
+  --font-display: var(--font-fredoka), system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+}
+
+/**
+ * Dark mode is a genuine second skin, not an inversion: the greens stay green and the paper
+ * becomes a deep pandan rather than neutral black, so the app reads as the same object at
+ * night.
+ *
+ * These override the custom properties on `:root`, NOT via a nested `@theme`. Tailwind 4
+ * only reads `@theme` at the top level — nesting one inside a media query does not scope it,
+ * it just applies the dark values everywhere. The utilities compile to `var(--color-*)`, so
+ * redefining the variables here is what actually swaps the palette.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #151b14;
+    --color-surface: #1e271d;
+    --color-sunken: #121812;
+    --color-line: #2f3b2d;
+
+    --color-ink: #e9efe4;
+    --color-ink-soft: #a3b39d;
+    --color-ink-faint: #74856f;
+
+    --color-pandan: #5eb37a;
+    --color-pandan-deep: #7fc998;
+    --color-pandan-wash: #22331f;
+    --color-teler: #f4899b;
+    --color-teler-wash: #3a2126;
+    --color-gula: #dd9a5f;
+    --color-gula-wash: #33251a;
+  }
+}
+
+@layer base {
+  html {
+    background-color: var(--color-paper);
+    /* The app sits inside a native shell; rubber-banding past the nav looks broken. */
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* iOS zooms the whole page when a font smaller than 16px receives focus. */
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px;
+    font-family: inherit;
+  }
+
+  /* Money must never reflow as digits change. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-pandan);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

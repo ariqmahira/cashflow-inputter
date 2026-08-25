@@ -15,7 +15,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -24,8 +24,16 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      # Covers the migration pipeline, the cycle and budget arithmetic, and the database
+      # schema. The schema tests run real Postgres in-process via pglite, so CI needs no
+      # database service.
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
         env:
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
-          VITE_SPREADSHEET_ID: ${{ secrets.VITE_SPREADSHEET_ID }}
+          # Public by design — these are compiled into the client bundle. The secret and
+          # service-role keys must never appear here.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
