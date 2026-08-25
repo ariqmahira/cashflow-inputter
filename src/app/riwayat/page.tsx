@@ -3,13 +3,15 @@
 import { useMemo, useState } from 'react';
 
 import { Empty, Screen } from '@/components/screen';
+import { SyncStatus } from '@/components/sync-status';
 import { useLedger } from '@/components/use-ledger';
 import { cycleFor, previousCycle, nextCycle, type Cycle } from '@/lib/cycle';
 import { formatIdr } from '@/lib/money';
 import { inCycle, netCost, type Entry, type Ledger } from '@/lib/queries';
 
 export default function Riwayat() {
-  const { status, ledger, error, reload } = useLedger();
+  const ledgerState = useLedger();
+  const { status, ledger, error, reload } = ledgerState;
   // null means "wherever the data is"; a number is an explicit choice by the user.
   const [offset, setOffset] = useState<number | null>(null);
 
@@ -28,6 +30,7 @@ export default function Riwayat() {
 
   return (
     <Screen title="Riwayat">
+      <SyncStatus state={ledgerState} />
       <CycleSwitcher
         cycle={cycle}
         onPrev={() => setOffset(stepsFromNow - 1)}

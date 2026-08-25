@@ -66,6 +66,29 @@ row whose category changed, which is most of them — see
 
 Loading is idempotent, keyed on the originating spreadsheet cell, so re-running is safe.
 
+## Offline
+
+The app is local-first. The device holds the last known ledger, so a screen renders from
+storage before any request is made and works with no connection; the network refreshes it
+behind. Saves go into a persisted outbox, appear on screen immediately, and are sent when the
+connection returns — entry never waits on the network, which matters because entry happens
+standing in a mall.
+
+- `src/lib/storage.ts` — durable key-value, the same on web and Android
+- `src/lib/outbox.ts` — the queue of unsent writes, drained in order
+- `src/lib/sync.ts` — cache-first reads and optimistic writes
+
+Both halves of a sync are on a deadline. A request that neither succeeds nor fails — a
+captive portal, a connection that opens then stalls — would otherwise leave the app unable to
+say anything at all: not refreshed, not stale, just waiting. `supabase-js` retries such
+requests internally, so without the deadline the promise never settles.
+
+There is **no SQLite on the device**, deliberately, and this departs from the original plan.
+The whole ledger is a few hundred rows loaded in full, and nothing on the device queries it
+relationally — every derivation runs over an in-memory array. SQLite would add a second
+schema to keep in step with Postgres, on-device migrations, and a native plugin, for nothing
+this app does.
+
 ## Android
 
 ```bash
@@ -73,17 +96,26 @@ npm run android:sync    # builds the static export and syncs it into the shell
 npm run android:open    # opens Android Studio to build the APK
 ```
 
-Needs Android Studio. No Play listing, no store review: the APK installs directly. iOS is
-not built — private installs still require a paid Apple Developer account.
+**Requires Android Studio and a JDK**, neither of which is needed for anything else here. The
+native project is committed (`android/`) — it holds the manifest, the deep-link filter and
+the icons — but its build output is not.
+
+`AndroidManifest.xml` registers `id.cashflow.app://auth/callback` so the magic link can return
+into the app. That same URL must be listed in Supabase → Authentication → URL Configuration,
+or sign-in will not complete.
+
+No Play listing and no store review: the APK installs directly. iOS is not built — private
+installs still require a paid Apple Developer account.
 
 ## Tests
 
 ```bash
-npm test        # 147 tests
+npm test        # 161 tests
 npm run typecheck
 ```
 
-Covers the migration pipeline, the cycle and budget arithmetic, and the database schema.
+Covers the migration pipeline, the cycle and budget arithmetic, the outbox, and the database
+schema.
 The schema tests run real Postgres in-process via pglite, so no database is needed to run
 them — including in CI.
 

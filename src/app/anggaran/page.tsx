@@ -3,14 +3,16 @@
 import { useState } from 'react';
 
 import { Screen } from '@/components/screen';
+import { SyncStatus } from '@/components/sync-status';
 import { useLedger } from '@/components/use-ledger';
 import { budgetStatus, cycleProgress } from '@/lib/cycle';
 import { formatAmount, formatIdr, parseAmount } from '@/lib/money';
-import { setBudget } from '@/lib/mutations';
+import { saveBudget } from '@/lib/sync';
 import { limitFor, spendingByCategory, typicalSpendPerCycle } from '@/lib/queries';
 
 export default function Anggaran() {
-  const { status, ledger, error, reload } = useLedger();
+  const ledgerState = useLedger();
+  const { status, ledger, error, reload } = ledgerState;
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
@@ -44,7 +46,7 @@ export default function Anggaran() {
     if (amount === null) return;
     setBusy(true);
     try {
-      await setBudget(categoryId, amount, cycle.start);
+      await saveBudget(categoryId, amount, cycle.start);
       setEditing(null);
       setDraft('');
       reload();
@@ -57,6 +59,7 @@ export default function Anggaran() {
 
   return (
     <Screen title="Anggaran">
+      <SyncStatus state={ledgerState} />
       {withLimits.length === 0 && (
         <p className="mb-4 rounded-card bg-surface p-5 text-sm text-ink-soft">
           Belum ada batas yang diset. Ketuk kategori buat kasih batas — nanti kami ingatkan

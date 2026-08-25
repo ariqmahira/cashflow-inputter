@@ -7,7 +7,7 @@ import { Screen } from '@/components/screen';
 import { useLedger } from '@/components/use-ledger';
 import { budgetAfterAdding } from '@/lib/cycle';
 import { formatAmount, formatIdr, parseAmount } from '@/lib/money';
-import { addExpense } from '@/lib/mutations';
+import { saveExpense } from '@/lib/sync';
 import { limitFor, spendingByCategory, type Merchant } from '@/lib/queries';
 
 /**
@@ -70,7 +70,7 @@ export default function Tambah() {
     setSaving(true);
     setSaveError(null);
     try {
-      await addExpense({
+      await saveExpense({
         occurredOn: today,
         amountIdr: amount,
         categoryId: effectiveCategoryId,

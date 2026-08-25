@@ -3,13 +3,15 @@
 import { useState } from 'react';
 
 import { Screen } from '@/components/screen';
+import { SyncStatus } from '@/components/sync-status';
 import { useLedger } from '@/components/use-ledger';
 import { formatIdr } from '@/lib/money';
 import { poolBalance } from '@/lib/queries';
 import { supabase } from '@/lib/supabase';
 
 export default function Pengaturan() {
-  const { status, ledger, error, reload } = useLedger();
+  const ledgerState = useLedger();
+  const { status, ledger, error, reload } = ledgerState;
   const [signingOut, setSigningOut] = useState(false);
 
   if (status !== 'ready') {
@@ -21,6 +23,7 @@ export default function Pengaturan() {
 
   return (
     <Screen title="Pengaturan">
+      <SyncStatus state={ledgerState} />
       <section className="rounded-card bg-surface p-5">
         <h2 className="font-display text-base text-ink">Siklus</h2>
         <dl className="mt-3 space-y-2 text-sm">

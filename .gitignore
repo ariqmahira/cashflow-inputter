@@ -17,5 +17,15 @@ scripts/migrate/out
 out
 .next
 next-env.d.ts
-android
+
+# Capacitor: the native projects are committed (manifest, deep links, icons); their build
+# output is not.
+android/build
+android/app/build
+android/.gradle
+android/local.properties
+android/.idea
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
 ios

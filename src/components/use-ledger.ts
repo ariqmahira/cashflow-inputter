@@ -2,75 +2,90 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { fetchLedger, type Ledger } from '@/lib/queries';
+import { readCache, syncNow, type LocalLedger } from '@/lib/sync';
 
 type State =
   | { status: 'loading'; ledger: null; error: null }
-  | { status: 'ready'; ledger: Ledger; error: null }
+  | { status: 'ready'; ledger: LocalLedger; error: null }
   | { status: 'error'; ledger: null; error: string };
 
+export type LedgerState = State & {
+  reload: () => void;
+  /** True while a background refresh is running behind already-rendered data. */
+  refreshing: boolean;
+  /** Set when the last refresh failed but cached data is on screen. */
+  stale: boolean;
+};
+
 /**
- * Loads the whole ledger once and hands it to a screen.
+ * Loads the ledger, cache first.
  *
- * Every screen wants a different slice of the same few hundred rows, so they share one fetch
- * rather than each running its own query. Phase 4 replaces the fetch with a read from the
- * device database; nothing that calls this needs to change.
+ * The cached copy renders immediately and the network refreshes it behind. That ordering is
+ * the point: the app opens instantly and works with no connection, and a failed refresh
+ * leaves the last known ledger on screen rather than an error page.
+ *
+ * An error is only shown when there is nothing cached to show instead.
  */
-export function useLedger(): State & { reload: () => void } {
+export function useLedger(): LedgerState {
   const [state, setState] = useState<State>({ status: 'loading', ledger: null, error: null });
+  const [refreshing, setRefreshing] = useState(false);
+  const [stale, setStale] = useState(false);
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    setState({ status: 'loading', ledger: null, error: null });
 
-    fetchLedgerWithRetry(() => cancelled)
-      .then((ledger) => {
-        if (!cancelled) setState({ status: 'ready', ledger, error: null });
-      })
-      .catch((err: unknown) => {
+    void (async () => {
+      const cached = await readCache();
+      if (cancelled) return;
+      if (cached) {
+        setState({ status: 'ready', ledger: cached, error: null });
+      }
+
+      setRefreshing(true);
+      try {
+        const fresh = await syncNow();
         if (cancelled) return;
-        setState({
-          status: 'error',
-          ledger: null,
-          error: err instanceof Error ? err.message : 'Gagal memuat data.',
-        });
-      });
+        setState({ status: 'ready', ledger: fresh, error: null });
+        setStale(false);
+      } catch (err) {
+        if (cancelled) return;
+        if (cached) {
+          // Cached data is still on screen and still useful; say it may be behind rather
+          // than replacing it with an error.
+          setStale(true);
+        } else {
+          setState({
+            status: 'error',
+            ledger: null,
+            error: err instanceof Error ? err.message : 'Gagal memuat data.',
+          });
+        }
+      } finally {
+        if (!cancelled) setRefreshing(false);
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
   }, [nonce]);
 
+  // Refresh when the connection returns or the app comes back to the foreground — the two
+  // moments when queued writes can finally be sent.
+  useEffect(() => {
+    const trigger = () => setNonce((n) => n + 1);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') trigger();
+    };
+    window.addEventListener('online', trigger);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('online', trigger);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
+
   const reload = useCallback(() => setNonce((n) => n + 1), []);
-  return { ...state, reload };
-}
-
-/**
- * Loads the ledger, retrying briefly on transient failures.
- *
- * The ledger is fetched as nine parallel requests and assembled as a whole, because partial
- * data would mean a wrong balance — and a wrong balance shown confidently is worse than an
- * error. But that also means any single request failing takes the whole screen down, and
- * this app is used on mall wifi.
- *
- * So: retry the assembly a couple of times with a short backoff. Genuine problems (a revoked
- * session, a schema mistake) still surface, just a second later.
- */
-async function fetchLedgerWithRetry(cancelled: () => boolean, attempts = 3): Promise<Ledger> {
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    if (cancelled()) throw new Error('cancelled');
-    try {
-      return await fetchLedger();
-    } catch (err) {
-      lastError = err;
-      if (attempt < attempts - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 400 * 2 ** attempt));
-      }
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error('Gagal memuat data.');
+  return { ...state, reload, refreshing, stale };
 }

@@ -19,8 +19,11 @@
     "db:link": "tsx --env-file=.env.local scripts/db/link-member.mts"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.0",
+    "@capacitor/network": "^8.0.1",
+    "@capacitor/preferences": "^8.0.1",
     "@supabase/supabase-js": "^2.112.3",
     "next": "^16.3.2",
     "react": "^19.2.8",

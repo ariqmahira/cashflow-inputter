@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { formatIdr } from '@/lib/money';
-import { addContribution } from '@/lib/mutations';
+import { saveContribution } from '@/lib/sync';
 import { topUpRecorded, type Ledger } from '@/lib/queries';
 
 /**
@@ -37,7 +37,7 @@ export function TopUpPrompt({ ledger, onDone }: { ledger: Ledger; onDone: () => 
     setError(null);
     try {
       for (const rule of outstanding) {
-        await addContribution({
+        await saveContribution({
           occurredOn: today,
           amountIdr: rule.amountIdr,
           memberId: rule.memberId!,

@@ -23,6 +23,11 @@ const config: NextConfig = {
   },
 
   typedRoutes: true,
+
+  // Next.js writes AGENTS.md and CLAUDE.md into the repo root on every build. Nothing here
+  // asked for them and they are not maintained, so they would be stale documentation
+  // committed by accident.
+  agentRules: false,
 };
 
 export default config;

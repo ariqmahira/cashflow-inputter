@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { KasJar } from '@/components/kas-jar';
 import { TopUpPrompt } from '@/components/top-up-prompt';
 import { Screen } from '@/components/screen';
+import { SyncStatus } from '@/components/sync-status';
 import { useLedger } from '@/components/use-ledger';
 import { burnRate, cycleProgress, projectedRunDry } from '@/lib/cycle';
 import { formatIdr, formatIdrShort } from '@/lib/money';
@@ -19,7 +20,8 @@ import {
 } from '@/lib/queries';
 
 export default function Beranda() {
-  const { status, ledger, error, reload } = useLedger();
+  const ledgerState = useLedger();
+  const { status, ledger, error, reload } = ledgerState;
 
   if (status !== 'ready') {
     return <Screen title="Beranda" status={status} error={error} onRetry={reload} />;
@@ -51,6 +53,7 @@ export default function Beranda() {
 
   return (
     <Screen title="Beranda">
+      <SyncStatus state={ledgerState} />
       <section className="rounded-card bg-surface p-5">
         <KasJar balance={balance} contributed={contributed} spent={spent} progress={progress} />
 
