@@ -4,31 +4,52 @@ import { useMemo, useState } from 'react';
 
 import { Empty, Screen } from '@/components/screen';
 import { useLedger } from '@/components/use-ledger';
-import { previousCycle, nextCycle, type Cycle } from '@/lib/cycle';
+import { cycleFor, previousCycle, nextCycle, type Cycle } from '@/lib/cycle';
 import { formatIdr } from '@/lib/money';
 import { inCycle, netCost, type Entry, type Ledger } from '@/lib/queries';
 
 export default function Riwayat() {
   const { status, ledger, error, reload } = useLedger();
-  const [offset, setOffset] = useState(0);
+  // null means "wherever the data is"; a number is an explicit choice by the user.
+  const [offset, setOffset] = useState<number | null>(null);
 
   if (status !== 'ready') {
     return <Screen title="Riwayat" status={status} error={error} onRetry={reload} />;
   }
 
-  const cycle = shiftCycle(ledger.cycle, offset, ledger.settings.cycleAnchorDay);
+  const anchor = ledger.settings.cycleAnchorDay;
+  // Landing on the current cycle shows nothing for the first days of every cycle, so the
+  // default is the newest cycle that actually holds an entry.
+  const newestWithEntries = ledger.entries.length
+    ? cycleFor(ledger.entries[0].occurredOn, anchor)
+    : ledger.cycle;
+  const cycle = offset === null ? newestWithEntries : shiftCycle(ledger.cycle, offset, anchor);
+  const stepsFromNow = offset ?? cyclesBetween(ledger.cycle, newestWithEntries, anchor);
 
   return (
     <Screen title="Riwayat">
       <CycleSwitcher
         cycle={cycle}
-        onPrev={() => setOffset((o) => o - 1)}
-        onNext={() => setOffset((o) => Math.min(0, o + 1))}
-        canGoNext={offset < 0}
+        onPrev={() => setOffset(stepsFromNow - 1)}
+        onNext={() => setOffset(Math.min(0, stepsFromNow + 1))}
+        canGoNext={stepsFromNow < 0}
       />
       <CycleEntries ledger={ledger} cycle={cycle} />
     </Screen>
   );
+}
+
+/** How many cycles `target` is from `from`; negative means earlier. */
+function cyclesBetween(from: Cycle, target: Cycle, anchor: number): number {
+  if (target.start === from.start) return 0;
+  let steps = 0;
+  let cursor = from;
+  // Bounded so a bad date can never spin here.
+  while (cursor.start > target.start && steps > -600) {
+    cursor = previousCycle(cursor, anchor);
+    steps--;
+  }
+  return steps;
 }
 
 function shiftCycle(from: Cycle, offset: number, anchor: number): Cycle {
@@ -98,7 +119,12 @@ function CycleEntries({ ledger, cycle }: { ledger: Ledger; cycle: Cycle }) {
   const byDay = groupByDay(inThis);
 
   if (inThis.length === 0) {
-    return <Empty title="Siklus ini masih kosong" hint="Belum ada yang dicatat antara tanggal ini." />;
+    return (
+      <Empty
+        title="Siklus ini kosong"
+        hint="Nggak ada yang dicatat di rentang tanggal ini. Geser ke siklus sebelumnya buat lihat yang lama."
+      />
+    );
   }
 
   const spent = inThis
@@ -161,10 +187,10 @@ function Row({
           {category && <span>{category}</span>}
           {entry.dateInferred && (
             <span
-              title="Tanggal ini ditebak saat migrasi dari spreadsheet"
-              className="rounded-pill bg-gula-wash px-1.5 py-0.5 text-gula"
+              title="Tanggal ini ditebak saat migrasi dari spreadsheet lama"
+              className="text-ink-faint"
             >
-              tanggal ditebak
+              · tanggal ditebak
             </span>
           )}
           {repaid ? (

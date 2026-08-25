@@ -24,7 +24,7 @@ export function useLedger(): State & { reload: () => void } {
     let cancelled = false;
     setState({ status: 'loading', ledger: null, error: null });
 
-    fetchLedger()
+    fetchLedgerWithRetry(() => cancelled)
       .then((ledger) => {
         if (!cancelled) setState({ status: 'ready', ledger, error: null });
       })
@@ -44,4 +44,33 @@ export function useLedger(): State & { reload: () => void } {
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
   return { ...state, reload };
+}
+
+/**
+ * Loads the ledger, retrying briefly on transient failures.
+ *
+ * The ledger is fetched as nine parallel requests and assembled as a whole, because partial
+ * data would mean a wrong balance — and a wrong balance shown confidently is worse than an
+ * error. But that also means any single request failing takes the whole screen down, and
+ * this app is used on mall wifi.
+ *
+ * So: retry the assembly a couple of times with a short backoff. Genuine problems (a revoked
+ * session, a schema mistake) still surface, just a second later.
+ */
+async function fetchLedgerWithRetry(cancelled: () => boolean, attempts = 3): Promise<Ledger> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (cancelled()) throw new Error('cancelled');
+    try {
+      return await fetchLedger();
+    } catch (err) {
+      lastError = err;
+      if (attempt < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 400 * 2 ** attempt));
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Gagal memuat data.');
 }

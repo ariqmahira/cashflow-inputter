@@ -7,7 +7,7 @@ import { useLedger } from '@/components/use-ledger';
 import { budgetStatus, cycleProgress } from '@/lib/cycle';
 import { formatAmount, formatIdr, parseAmount } from '@/lib/money';
 import { setBudget } from '@/lib/mutations';
-import { limitFor, spendingByCategory } from '@/lib/queries';
+import { limitFor, spendingByCategory, typicalSpendPerCycle } from '@/lib/queries';
 
 export default function Anggaran() {
   const { status, ledger, error, reload } = useLedger();
@@ -22,13 +22,22 @@ export default function Anggaran() {
   const { categories, entries, reimbursed, budgets, cycle, today, settings } = ledger;
   const spent = spendingByCategory(entries, reimbursed, cycle);
   const progress = cycleProgress(today, cycle);
+  // Two years of history is a far better starting point for a limit than a blank field.
+  const typical = typicalSpendPerCycle(entries, reimbursed, settings.cycleAnchorDay);
 
   const rows = categories
     .map((c) => {
       const limit = limitFor(budgets, c.id, cycle);
-      return { category: c, limit, status: budgetStatus(spent.get(c.id) ?? 0, limit, settings.warnThreshold) };
+      return {
+        category: c,
+        limit,
+        typical: typical.get(c.id) ?? 0,
+        status: budgetStatus(spent.get(c.id) ?? 0, limit, settings.warnThreshold),
+      };
     })
-    .sort((a, b) => b.status.spent - a.status.spent);
+    // Categories with a limit first, then by how much is usually spent — so the ones worth
+    // budgeting sit at the top even in a cycle where nothing has been spent yet.
+    .sort((a, b) => b.status.spent - a.status.spent || b.typical - a.typical);
 
   async function save(categoryId: string) {
     const amount = parseAmount(draft);
@@ -56,7 +65,7 @@ export default function Anggaran() {
       )}
 
       <ul className="space-y-2.5">
-        {rows.map(({ category, limit, status: s }) => {
+        {rows.map(({ category, limit, typical: usual, status: s }) => {
           const pct = limit > 0 ? Math.min(100, Math.round(s.ratio * 100)) : 0;
           const bar =
             s.state === 'over' ? 'bg-teler' : s.state === 'warn' ? 'bg-gula' : 'bg-pandan';
@@ -67,7 +76,14 @@ export default function Anggaran() {
                 type="button"
                 onClick={() => {
                   setEditing(editing === category.id ? null : category.id);
-                  setDraft(limit > 0 ? formatAmount(limit) : '');
+                  // Pre-fill with what they usually spend, rounded to the nearest 50rb.
+                  setDraft(
+                    limit > 0
+                      ? formatAmount(limit)
+                      : usual > 0
+                        ? formatAmount(Math.round(usual / 50_000) * 50_000)
+                        : '',
+                  );
                 }}
                 className="flex w-full items-baseline justify-between gap-3 text-left"
               >
@@ -77,6 +93,12 @@ export default function Anggaran() {
                   {limit > 0 && <span className="text-ink-faint"> / {formatIdr(limit)}</span>}
                 </span>
               </button>
+
+              {limit === 0 && usual > 0 && (
+                <p className="mt-1 text-xs text-ink-faint">
+                  Biasanya {formatIdr(usual)} per siklus
+                </p>
+              )}
 
               {limit > 0 && (
                 <>

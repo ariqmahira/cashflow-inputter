@@ -116,6 +116,41 @@ export async function fetchReimbursedByEntry(): Promise<Map<string, number>> {
   return new Map(data.map((r) => [r.expense_entry_id, Number(r.amount_idr)]));
 }
 
+export type Member = { id: string; name: string };
+
+export async function fetchMembers(): Promise<Member[]> {
+  const { data, error } = await supabase()
+    .from('members')
+    .select('id, display_name')
+    .order('display_name');
+  if (error) throw error;
+  return data.map((m) => ({ id: m.id, name: m.display_name }));
+}
+
+export type RecurringRule = {
+  id: string;
+  label: string;
+  amountIdr: number;
+  dayOfMonth: number;
+  memberId: string | null;
+};
+
+export async function fetchRecurringRules(): Promise<RecurringRule[]> {
+  const { data, error } = await supabase()
+    .from('recurring_rules')
+    .select('id, label, amount_idr, day_of_month, member_id')
+    .eq('active', true)
+    .eq('kind', 'contribution');
+  if (error) throw error;
+  return data.map((r) => ({
+    id: r.id,
+    label: r.label,
+    amountIdr: Number(r.amount_idr),
+    dayOfMonth: r.day_of_month,
+    memberId: r.member_id,
+  }));
+}
+
 export type BudgetLimit = { categoryId: string; amountIdr: number; effectiveFrom: PlainDate };
 
 export async function fetchBudgets(): Promise<BudgetLimit[]> {
@@ -149,21 +184,26 @@ export type Ledger = {
   merchants: Merchant[];
   places: Place[];
   budgets: BudgetLimit[];
+  members: Member[];
+  recurringRules: RecurringRule[];
   settings: Settings;
   today: PlainDate;
   cycle: Cycle;
 };
 
 export async function fetchLedger(): Promise<Ledger> {
-  const [settings, categories, merchants, places, entries, reimbursed, budgets] = await Promise.all([
-    fetchSettings(),
-    fetchCategories(),
-    fetchMerchants(),
-    fetchPlaces(),
-    fetchEntries(),
-    fetchReimbursedByEntry(),
-    fetchBudgets(),
-  ]);
+  const [settings, categories, merchants, places, entries, reimbursed, budgets, members, recurringRules] =
+    await Promise.all([
+      fetchSettings(),
+      fetchCategories(),
+      fetchMerchants(),
+      fetchPlaces(),
+      fetchEntries(),
+      fetchReimbursedByEntry(),
+      fetchBudgets(),
+      fetchMembers(),
+      fetchRecurringRules(),
+    ]);
   const today = todayLocal();
   return {
     entries,
@@ -172,6 +212,8 @@ export async function fetchLedger(): Promise<Ledger> {
     merchants,
     places,
     budgets,
+    members,
+    recurringRules,
     settings,
     today,
     cycle: cycleFor(today, settings.cycleAnchorDay),
@@ -224,4 +266,53 @@ export function cycleContributions(entries: Entry[], cycle: Cycle): number {
   return entries
     .filter((e) => e.kind !== 'expense' && inCycle(e, cycle))
     .reduce((acc, e) => acc + e.amountIdr, 0);
+}
+
+/**
+ * The most recent entries, ignoring which cycle they fall in.
+ *
+ * Deliberately not cycle-scoped. On the first day of a cycle a cycle-scoped list is empty,
+ * which makes an account holding two years of history look like an empty account.
+ */
+export function latestEntries(entries: Entry[], limit: number): Entry[] {
+  return entries.filter((e) => e.kind === 'expense').slice(0, limit);
+}
+
+/**
+ * Typical spending per cycle for each category, averaged over the cycles that actually
+ * contain any. Used to suggest a budget: picking a limit is much easier against "you usually
+ * spend about this" than against a blank field.
+ *
+ * Cycles with no spending in a category are excluded rather than counted as zero — they
+ * would drag every average toward nothing and suggest limits no one could keep.
+ */
+export function typicalSpendPerCycle(
+  entries: Entry[],
+  reimbursed: Map<string, number>,
+  anchorDay: number,
+): Map<string, number> {
+  const perCycle = new Map<string, Map<string, number>>();
+
+  for (const e of entries) {
+    if (e.kind !== 'expense' || !e.categoryId) continue;
+    const id = cycleFor(e.occurredOn, anchorDay).id;
+    const bucket = perCycle.get(e.categoryId) ?? new Map<string, number>();
+    bucket.set(id, (bucket.get(id) ?? 0) + netCost(e, reimbursed));
+    perCycle.set(e.categoryId, bucket);
+  }
+
+  const typical = new Map<string, number>();
+  for (const [categoryId, cycles] of perCycle) {
+    const totals = [...cycles.values()];
+    if (totals.length === 0) continue;
+    typical.set(categoryId, Math.round(totals.reduce((a, b) => a + b, 0) / totals.length));
+  }
+  return typical;
+}
+
+/** Whether this cycle's kas top-up has been recorded for a given member. */
+export function topUpRecorded(entries: Entry[], cycle: Cycle, memberId: string): boolean {
+  return entries.some(
+    (e) => e.kind === 'contribution' && e.memberId === memberId && inCycle(e, cycle) && e.amountIdr > 0,
+  );
 }

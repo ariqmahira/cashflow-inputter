@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { KasJar } from '@/components/kas-jar';
+import { TopUpPrompt } from '@/components/top-up-prompt';
 import { Screen } from '@/components/screen';
 import { useLedger } from '@/components/use-ledger';
 import { burnRate, cycleProgress, projectedRunDry } from '@/lib/cycle';
@@ -11,7 +12,7 @@ import { addDays, daysBetween } from '@/lib/plain-date';
 import {
   cycleContributions,
   cycleSpending,
-  inCycle,
+  latestEntries,
   netCost,
   poolBalance,
   spendingByCategory,
@@ -45,7 +46,10 @@ export default function Beranda() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 4);
 
-  const recent = entries.filter((e) => e.kind === 'expense' && inCycle(e, cycle)).slice(0, 4);
+  // Not cycle-scoped: on the first day of a cycle that list is empty, which makes two years
+  // of history look like an empty account.
+  const recent = latestEntries(entries, 4);
+  const merchantName = new Map(ledger.merchants.map((m) => [m.id, m.name]));
   // The next anchor day is simply the day after this cycle ends — no separate arithmetic.
   const nextTopUp = addDays(cycle.end, 1);
 
@@ -70,10 +74,12 @@ export default function Beranda() {
           ) : contributed > 0 ? (
             <>Kas berikutnya masuk {prettyDate(nextTopUp)}.</>
           ) : (
-            <>Belum ada kas masuk siklus ini. Kas berikutnya {prettyDate(nextTopUp)}.</>
+            <>Belum ada kas masuk siklus ini.</>
           )}
         </p>
       </section>
+
+      <TopUpPrompt ledger={ledger} onDone={reload} />
 
       {top.length > 0 && (
         <section className="mt-4 rounded-card bg-surface p-5">
@@ -107,13 +113,15 @@ export default function Beranda() {
 
         {recent.length === 0 ? (
           <p className="mt-3 text-sm text-ink-soft">
-            Belum ada pengeluaran siklus ini. Yang pertama menentukan nadanya.
+            Belum ada pengeluaran sama sekali. Yang pertama menentukan nadanya.
           </p>
         ) : (
           <ul className="mt-3 divide-y divide-line">
             {recent.map((e) => (
               <li key={e.id} className="flex items-baseline justify-between gap-3 py-2.5 text-sm">
-                <span className="truncate text-ink">{e.note ?? 'Pengeluaran'}</span>
+                <span className="min-w-0 truncate text-ink">
+                  {(e.merchantId ? merchantName.get(e.merchantId) : null) ?? e.note ?? 'Pengeluaran'}
+                </span>
                 <span className="tnum shrink-0 text-ink-soft">
                   {formatIdr(netCost(e, reimbursed))}
                 </span>
