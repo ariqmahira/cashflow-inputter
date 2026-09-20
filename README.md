@@ -15,7 +15,6 @@ everything.
 src/app/         screens: / · /add · /history · /budget · /settings
 src/components/  UI, including the kas jar
 src/lib/         cycle + budget arithmetic, money formatting, Supabase access
-scripts/migrate/ one-time migration from the spreadsheet
 scripts/db/      migration runner
 supabase/        SQL migrations and schema tests
 docs/adr/        the two decisions worth explaining
@@ -50,21 +49,16 @@ sign-in will not return:
 - `http://localhost:3000/` (development)
 - `id.cashflow.app://auth/callback` (the Android shell)
 
-## Migrating the spreadsheet
+## The spreadsheet
 
-Only needed when there is a newer export of the workbook.
+The ledger started as a workbook, imported once in August 2026. The importer has been
+removed now that the data is in Postgres and the app is the only thing writing to it; it is
+in git history if a second import is ever needed.
 
-```bash
-npm run migrate -- "Cashflow Bab & Bi_YYYYMMDD.xlsx"   # writes scripts/migrate/out/
-npm run migrate:load                                    # loads it into Supabase
-```
-
-The migration **aborts** unless every monthly sheet's total matches the `SUM` the workbook
-itself cached. Read `out/summary.md` before loading; `out/categories-report.md` lists every
-row whose category changed, which is most of them — see
-[ADR 0002](./docs/adr/0002-categories-are-re-derived-not-migrated.md) for why.
-
-Loading is idempotent, keyed on the originating spreadsheet cell, so re-running is safe.
+Entries carry a `legacy_ref` back to the originating spreadsheet cell. Categories were
+re-derived from the merchant rather than carried over — see
+[ADR 0002](./docs/adr/0002-categories-are-re-derived-not-migrated.md) for why the workbook's
+own category column could not be trusted.
 
 ## Offline
 
@@ -110,17 +104,16 @@ installs still require a paid Apple Developer account.
 ## Tests
 
 ```bash
-npm test        # 161 tests
+npm test        # 78 tests
 npm run typecheck
 ```
 
-Covers the migration pipeline, the cycle and budget arithmetic, the outbox, and the database
-schema.
+Covers the cycle and budget arithmetic, the outbox, and the database schema.
 The schema tests run real Postgres in-process via pglite, so no database is needed to run
 them — including in CI.
 
-There are no UI tests. That was a deliberate call: the money math and the migration are
-where a silent bug does lasting damage.
+There are no UI tests. That was a deliberate call: the money math is where a silent bug does
+lasting damage.
 
 ## Things worth knowing
 
