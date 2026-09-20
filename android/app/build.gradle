@@ -30,6 +30,19 @@ repositories {
     }
 }
 
+// The text recognition plugin depends on every script ML Kit supports, and each script is a
+// separate bundled model worth several megabytes. Receipts here are Latin, and the app only
+// ever asks for Latin, so the other four are dropped rather than shipped and never loaded.
+//
+// If a script other than Latin is ever passed to `TextRecognition.processImage`, remove the
+// matching line below first — the call fails at runtime without the model.
+configurations.configureEach {
+    exclude group: 'com.google.mlkit', module: 'text-recognition-chinese'
+    exclude group: 'com.google.mlkit', module: 'text-recognition-devanagari'
+    exclude group: 'com.google.mlkit', module: 'text-recognition-japanese'
+    exclude group: 'com.google.mlkit', module: 'text-recognition-korean'
+}
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"

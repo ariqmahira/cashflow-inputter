@@ -50,3 +50,27 @@ export function parseAmount(input: string): number | null {
   const value = Number(cleaned);
   return Number.isSafeInteger(value) ? value : null;
 }
+
+/**
+ * Reads an amount off a scanned receipt.
+ *
+ * Deliberately not `parseAmount`. That one strips every separator, which is right for a
+ * keypad — nobody types cents — but wrong here: tills print them. `43.500,00` through
+ * `parseAmount` comes back as 4.350.000, a hundredfold error that would sail past every
+ * check in the app. So the decimal tail is removed first, and only then the grouping.
+ *
+ * Both conventions appear on Indonesian receipts (`43.500,00` and `43,500.00`), so the tail
+ * is recognised by shape — a single separator followed by exactly two digits at the end —
+ * rather than by which character it is.
+ */
+export function parseReceiptAmount(input: string): number | null {
+  const body = input.replace(/rp/gi, '').replace(/\s/g, '').trim();
+  if (!body) return null;
+
+  const withoutCents = body.replace(/[.,]\d{2}$/, '');
+  const digits = withoutCents.replace(/[.,]/g, '');
+  if (!/^\d+$/.test(digits)) return null;
+
+  const value = Number(digits);
+  return Number.isSafeInteger(value) ? value : null;
+}

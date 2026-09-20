@@ -1,12 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { DateField } from '@/components/date-field';
 import { budgetAfterAdding } from '@/lib/cycle';
 import { formatAmount, formatIdr, parseAmount } from '@/lib/money';
 import { limitFor, spendingByCategory, type Ledger, type Merchant } from '@/lib/queries';
+import { parseReceipt } from '@/lib/receipt';
+import { prepareScanner, scanReceipt, scanSupported } from '@/lib/scanner';
 import { saveExpense } from '@/lib/sync';
 
 /**
@@ -29,6 +31,22 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
   const [occurredOn, setOccurredOn] = useState(today);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canScan, setCanScan] = useState(false);
+  const [scanning, setScanning] = useState(false);
+
+  // The scanner needs a module Play Services fetches on demand, so whether this device can
+  // scan at all is only knowable asynchronously. `prepareScanner` already ran at startup and
+  // remembers its answer, so this resolves immediately in practice.
+  useEffect(() => {
+    if (!scanSupported()) return;
+    let cancelled = false;
+    void prepareScanner().then((ready) => {
+      if (!cancelled) setCanScan(ready);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const suggestions = useMemo(
     () => suggestMerchants(merchants, merchantName),
@@ -58,6 +76,36 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
   const categoryName = categories.find((c) => c.id === effectiveCategoryId)?.name;
   const canSave = Boolean(amount && amount > 0 && merchantName.trim() && effectiveCategoryId);
 
+  /**
+   * Fills the form from a photographed receipt.
+   *
+   * Only what was actually read is written; a field the scan could not make out is left
+   * exactly as the user left it. `canSave` still guards the save, so a half-read receipt
+   * lands the user on a form with the gaps waiting rather than on a wrong entry.
+   *
+   * `touchedCategory` is deliberately not set: a recognised merchant should fill the
+   * category the same way typing that merchant's name would.
+   */
+  async function scan() {
+    setScanning(true);
+    setError(null);
+    try {
+      const parsed = parseReceipt(await scanReceipt(), { today, merchants });
+      if (parsed.amountIdr) setAmountText(formatAmount(parsed.amountIdr));
+      if (parsed.merchantText) setMerchantName(parsed.merchantText);
+      if (parsed.occurredOn) setOccurredOn(parsed.occurredOn);
+      if (!parsed.amountIdr && !parsed.merchantText) {
+        setError('Could not read that receipt. Try again, or type it in.');
+      }
+    } catch (err) {
+      // Backing out of the scanner is a normal thing to do, not a failure to report.
+      const message = err instanceof Error ? err.message : '';
+      if (!/cancel/i.test(message)) setError('The scan did not work. Try again.');
+    } finally {
+      setScanning(false);
+    }
+  }
+
   async function save() {
     if (!canSave || !amount || !effectiveCategoryId) return;
     setSaving(true);
@@ -81,9 +129,21 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
   return (
     <>
       <div className="rounded-card bg-surface p-5">
-        <label htmlFor="amount" className="block text-xs font-medium uppercase tracking-wide text-ink-faint">
-          Amount
-        </label>
+        <div className="flex items-center justify-between gap-3">
+          <label htmlFor="amount" className="block text-xs font-medium uppercase tracking-wide text-ink-faint">
+            Amount
+          </label>
+          {canScan && (
+            <button
+              type="button"
+              onClick={() => void scan()}
+              disabled={scanning}
+              className="-my-1 rounded-pill bg-sunken px-3 py-1.5 text-xs font-medium text-ink disabled:opacity-40"
+            >
+              {scanning ? 'Reading…' : 'Scan receipt'}
+            </button>
+          )}
+        </div>
         <div className="mt-1 flex items-baseline gap-2">
           <span className="font-display text-2xl text-ink-faint">Rp</span>
           <input

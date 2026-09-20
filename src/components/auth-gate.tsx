@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 
+import { prepareScanner } from '@/lib/scanner';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { SignIn } from './sign-in';
 
@@ -21,6 +22,14 @@ type State =
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<State>({ status: 'loading' });
+
+  // Play Services downloads the receipt scanner on first use, so it is asked for here, once,
+  // as early as the app runs at all. Nothing waits on it: the result is remembered inside
+  // `prepareScanner`, and the expense form reads it when it mounts. A device that cannot
+  // scan simply never offers the button.
+  useEffect(() => {
+    void prepareScanner();
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
