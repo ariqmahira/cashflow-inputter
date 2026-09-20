@@ -46,17 +46,18 @@ export function TopUpPrompt({ ledger, onDone }: { ledger: Ledger; onDone: () => 
       }
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan. Coba lagi.');
+      setError(err instanceof Error ? err.message : 'Could not save. Try again.');
       setSaving(false);
     }
   }
 
   return (
     <section className="mt-4 rounded-card bg-pandan-wash p-5">
-      <h2 className="font-display text-base text-ink">Kas belum dicatat</h2>
+      <h2 className="font-display text-base text-ink">Kas not recorded yet</h2>
       <p className="mt-1 text-sm text-ink-soft">
-        {outstanding.map((r) => memberName.get(r.memberId!) ?? r.label).join(' dan ')} belum masuk
-        siklus ini.
+        Nothing from{' '}
+        {outstanding.map((r) => memberName.get(r.memberId!) ?? r.label).join(' and ')} yet this
+        cycle.
       </p>
 
       <ul className="mt-3 space-y-1 text-sm">
@@ -76,11 +77,11 @@ export function TopUpPrompt({ ledger, onDone }: { ledger: Ledger; onDone: () => 
         disabled={saving}
         className="mt-4 w-full rounded-pill bg-pandan px-5 py-3 font-display text-base text-white disabled:opacity-60"
       >
-        {saving ? 'Menyimpan…' : `Catat ${formatIdr(total)} masuk`}
+        {saving ? 'Saving…' : `Record ${formatIdr(total)} in`}
       </button>
 
       <p className="mt-2 text-center text-xs text-ink-soft">
-        Cuma kalau uangnya memang sudah dikirim.
+        Only if the money has actually been sent.
       </p>
     </section>
   );

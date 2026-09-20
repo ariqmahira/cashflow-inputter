@@ -31,7 +31,7 @@ export function SignIn() {
     } catch (err) {
       setStatus({
         kind: 'error',
-        message: err instanceof Error ? err.message : 'Tautan gagal dikirim. Coba lagi.',
+        message: err instanceof Error ? err.message : 'Could not send the link. Try again.',
       });
     }
   }
@@ -40,14 +40,14 @@ export function SignIn() {
     <div className="mx-auto grid min-h-dvh max-w-sm place-items-center px-6">
       <div className="w-full">
         <h1 className="font-display text-4xl leading-none text-ink">Kas</h1>
-        <p className="mt-2 text-sm text-ink-soft">Kas bersama Ariq &amp; Ika</p>
+        <p className="mt-2 text-sm text-ink-soft">Shared kas for Ariq &amp; Ika</p>
 
         {status.kind === 'sent' ? (
           <div className="mt-8 rounded-card bg-pandan-wash p-5">
-            <p className="font-display text-lg text-ink">Cek email kamu</p>
+            <p className="font-display text-lg text-ink">Check your email</p>
             <p className="mt-1 text-sm text-ink-soft">
-              Tautan masuk sudah dikirim ke {email}. Buka dari HP ini supaya langsung kebuka di
-              aplikasi.
+              A sign-in link was sent to {email}. Open it on this phone so it goes straight
+              into the app.
             </p>
           </div>
         ) : (
@@ -63,7 +63,7 @@ export function SignIn() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="kamu@email.com"
+              placeholder="you@email.com"
               className="mt-2 w-full rounded-card border border-line bg-surface px-4 py-3 text-ink placeholder:text-ink-faint"
             />
 
@@ -72,7 +72,7 @@ export function SignIn() {
               disabled={status.kind === 'sending'}
               className="mt-4 w-full rounded-pill bg-pandan px-5 py-3.5 font-display text-base text-white disabled:opacity-60"
             >
-              {status.kind === 'sending' ? 'Mengirim…' : 'Kirim tautan masuk'}
+              {status.kind === 'sending' ? 'Sending…' : 'Send sign-in link'}
             </button>
 
             {status.kind === 'error' && (
@@ -80,7 +80,7 @@ export function SignIn() {
             )}
 
             <p className="mt-4 text-xs text-ink-faint">
-              Nggak ada password. Kami kirim tautan sekali pakai ke email kamu.
+              No password. We'll email you a one-time link.
             </p>
           </form>
         )}

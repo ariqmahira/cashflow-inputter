@@ -10,7 +10,7 @@ import { formatAmount, formatIdr, parseAmount } from '@/lib/money';
 import { saveBudget } from '@/lib/sync';
 import { limitFor, spendingByCategory, typicalSpendPerCycle } from '@/lib/queries';
 
-export default function Anggaran() {
+export default function Budget() {
   const ledgerState = useLedger();
   const { status, ledger, error, reload } = ledgerState;
   const [editing, setEditing] = useState<string | null>(null);
@@ -18,7 +18,7 @@ export default function Anggaran() {
   const [busy, setBusy] = useState(false);
 
   if (status !== 'ready') {
-    return <Screen title="Anggaran" status={status} error={error} onRetry={reload} />;
+    return <Screen title="Budget" status={status} error={error} onRetry={reload} />;
   }
 
   const { categories, entries, reimbursed, budgets, cycle, today, settings } = ledger;
@@ -58,12 +58,12 @@ export default function Anggaran() {
   const withLimits = rows.filter((r) => r.limit > 0);
 
   return (
-    <Screen title="Anggaran">
+    <Screen title="Budget">
       <SyncStatus state={ledgerState} />
       {withLimits.length === 0 && (
         <p className="mb-4 rounded-card bg-surface p-5 text-sm text-ink-soft">
-          Belum ada batas yang diset. Ketuk kategori buat kasih batas — nanti kami ingatkan
-          waktu kamu nyimpen pengeluaran yang bikin mepet.
+          No limits set yet. Tap a category to give it a limit — we'll warn you when you save
+          an expense that brings it close.
         </p>
       )}
 
@@ -79,7 +79,7 @@ export default function Anggaran() {
                 type="button"
                 onClick={() => {
                   setEditing(editing === category.id ? null : category.id);
-                  // Pre-fill with what they usually spend, rounded to the nearest 50rb.
+                  // Pre-fill with what they usually spend, rounded to the nearest 50k.
                   setDraft(
                     limit > 0
                       ? formatAmount(limit)
@@ -99,7 +99,7 @@ export default function Anggaran() {
 
               {limit === 0 && usual > 0 && (
                 <p className="mt-1 text-xs text-ink-faint">
-                  Biasanya {formatIdr(usual)} per siklus
+                  Usually {formatIdr(usual)} per cycle
                 </p>
               )}
 
@@ -116,8 +116,8 @@ export default function Anggaran() {
                   </div>
                   <p className="mt-1.5 text-xs text-ink-faint">
                     {s.state === 'over'
-                      ? `Lewat ${formatIdr(-s.remaining)}`
-                      : `Sisa ${formatIdr(s.remaining)}`}
+                      ? `Over by ${formatIdr(-s.remaining)}`
+                      : `${formatIdr(s.remaining)} left`}
                   </p>
                 </>
               )}
@@ -132,7 +132,7 @@ export default function Anggaran() {
                       const digits = e.target.value.replace(/\D/g, '');
                       setDraft(digits ? formatAmount(Number(digits)) : '');
                     }}
-                    placeholder="Batas per siklus"
+                    placeholder="Limit per cycle"
                     className="tnum min-w-0 flex-1 rounded-card border border-line bg-paper px-3 py-2 text-ink"
                   />
                   <button
@@ -141,7 +141,7 @@ export default function Anggaran() {
                     disabled={busy || parseAmount(draft) === null}
                     className="shrink-0 rounded-pill bg-pandan px-4 py-2 text-sm text-white disabled:opacity-40"
                   >
-                    Simpan
+                    Save
                   </button>
                 </div>
               )}

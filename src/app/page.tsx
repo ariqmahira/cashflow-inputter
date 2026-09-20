@@ -19,12 +19,12 @@ import {
   spendingByCategory,
 } from '@/lib/queries';
 
-export default function Beranda() {
+export default function Home() {
   const ledgerState = useLedger();
   const { status, ledger, error, reload } = ledgerState;
 
   if (status !== 'ready') {
-    return <Screen title="Beranda" status={status} error={error} onRetry={reload} />;
+    return <Screen title="Home" status={status} error={error} onRetry={reload} />;
   }
 
   const { entries, reimbursed, categories, cycle, today } = ledger;
@@ -52,28 +52,28 @@ export default function Beranda() {
   const nextTopUp = addDays(cycle.end, 1);
 
   return (
-    <Screen title="Beranda">
+    <Screen title="Home">
       <SyncStatus state={ledgerState} />
       <section className="rounded-card bg-surface p-5">
         <KasJar balance={balance} contributed={contributed} spent={spent} progress={progress} />
 
         <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-line pt-4 text-center">
-          <Stat label="Terpakai" value={formatIdrShort(spent)} />
-          <Stat label="Per hari" value={formatIdrShort(Math.round(rate))} />
-          <Stat label="Sisa hari" value={daysLeft >= 0 ? String(daysLeft) : '0'} />
+          <Stat label="Spent" value={formatIdrShort(spent)} />
+          <Stat label="Per day" value={formatIdrShort(Math.round(rate))} />
+          <Stat label="Days left" value={daysLeft >= 0 ? String(daysLeft) : '0'} />
         </dl>
 
         <p className="mt-4 text-sm text-ink-soft">
           {runDry && runDry <= cycle.end ? (
             <>
-              Dengan pola sekarang, kas habis sekitar{' '}
+              At this pace, the kas runs out around{' '}
               <strong className="font-semibold text-gula">{prettyDate(runDry)}</strong> — {' '}
-              {daysBetween(runDry, cycle.end)} hari sebelum kas berikutnya.
+              {daysBetween(runDry, cycle.end)} days before the next top-up.
             </>
           ) : contributed > 0 ? (
-            <>Kas berikutnya masuk {prettyDate(nextTopUp)}.</>
+            <>Next kas top-up lands {prettyDate(nextTopUp)}.</>
           ) : (
-            <>Belum ada kas masuk siklus ini.</>
+            <>No kas has come in this cycle yet.</>
           )}
         </p>
       </section>
@@ -82,7 +82,7 @@ export default function Beranda() {
 
       {top.length > 0 && (
         <section className="mt-4 rounded-card bg-surface p-5">
-          <h2 className="font-display text-base text-ink">Ke mana perginya</h2>
+          <h2 className="font-display text-base text-ink">Where it went</h2>
           <ul className="mt-3 space-y-2.5">
             {top.map((c) => (
               <li key={c.name}>
@@ -104,22 +104,22 @@ export default function Beranda() {
 
       <section className="mt-4 rounded-card bg-surface p-5">
         <div className="flex items-baseline justify-between">
-          <h2 className="font-display text-base text-ink">Terakhir</h2>
-          <Link href="/riwayat" className="text-sm text-pandan-deep">
-            Lihat semua
+          <h2 className="font-display text-base text-ink">Recent</h2>
+          <Link href="/history" className="text-sm text-pandan-deep">
+            See all
           </Link>
         </div>
 
         {recent.length === 0 ? (
           <p className="mt-3 text-sm text-ink-soft">
-            Belum ada pengeluaran sama sekali. Yang pertama menentukan nadanya.
+            No expenses yet at all. The first one sets the tone.
           </p>
         ) : (
           <ul className="mt-3 divide-y divide-line">
             {recent.map((e) => (
               <li key={e.id} className="flex items-baseline justify-between gap-3 py-2.5 text-sm">
                 <span className="min-w-0 truncate text-ink">
-                  {(e.merchantId ? merchantName.get(e.merchantId) : null) ?? e.note ?? 'Pengeluaran'}
+                  {(e.merchantId ? merchantName.get(e.merchantId) : null) ?? e.note ?? 'Expense'}
                 </span>
                 <span className="tnum shrink-0 text-ink-soft">
                   {formatIdr(netCost(e, reimbursed))}
@@ -144,7 +144,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function prettyDate(date: string): string {
   const [y, m, d] = date.split('-').map(Number);
-  return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(
     new Date(Date.UTC(y, m - 1, d)),
   );
 }

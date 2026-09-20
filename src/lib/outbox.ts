@@ -150,7 +150,7 @@ async function drainOnce(): Promise<DrainResult> {
         state.queue.shift();
         state.rejected.push({
           item,
-          error: err instanceof Error ? err.message : 'Tidak diketahui',
+          error: err instanceof Error ? err.message : 'Unknown error',
         });
         // Move on: the blockage is gone, and the rest of the queue deserves a chance.
         continue;

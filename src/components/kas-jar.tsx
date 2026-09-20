@@ -37,7 +37,7 @@ export function KasJar({ balance, contributed, spent, progress }: Props) {
    * Those differ whenever a cycle opens in deficit. On 25 Aug 2026 the pool held 89.022
    * after 1.200.000 went in — because 1.1M of the new kas immediately covered the previous
    * cycle's overspend. Measuring against "balance + spent" made that read as a full jar and
-   * "masih aman", when the truth was 89.022 to last 23 days.
+   * "still safe", when the truth was 89.022 to last 23 days.
    */
   const funding = contributed > 0 ? contributed : balance + spent;
   const empty = funding <= 0;
@@ -72,7 +72,7 @@ export function KasJar({ balance, contributed, spent, progress }: Props) {
         height="118"
         viewBox="0 0 84 108"
         role="img"
-        aria-label={`Sisa kas ${formatIdr(balance)}`}
+        aria-label={`Kas balance ${formatIdr(balance)}`}
         className="shrink-0"
       >
         <defs>
@@ -129,20 +129,20 @@ export function KasJar({ balance, contributed, spent, progress }: Props) {
       </svg>
 
       <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Sisa kas</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Kas balance</p>
         <p className={`tnum whitespace-nowrap font-display text-[2rem] leading-tight ${text}`}>
           {formatIdr(balance)}
         </p>
         <p className="mt-1 text-sm text-ink-soft">
           {empty
-            ? 'Belum ada kas masuk siklus ini.'
+            ? 'No kas has come in this cycle yet.'
             : carried > 0 && spent === 0
               ? // Nothing spent yet, but the jar is already low: the shortfall came from the
                 // previous cycle, and saying "spending fast" would blame the wrong month.
-                `${formatIdr(carried)} kas bulan ini kepakai nutup siklus sebelumnya.`
+                `${formatIdr(carried)} of this month's kas went to covering the previous cycle.`
               : behind
-                ? 'Lebih cepat dari biasanya.'
-                : 'Masih aman sampai kas berikutnya.'}
+                ? 'Spending faster than usual.'
+                : 'On track until the next top-up.'}
         </p>
       </div>
     </div>

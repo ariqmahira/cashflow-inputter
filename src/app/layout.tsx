@@ -22,7 +22,7 @@ const fredoka = Fredoka({
 
 export const metadata: Metadata = {
   title: 'Kas',
-  description: 'Kas bersama Ariq & Ika',
+  description: 'Shared kas for Ariq & Ika',
   applicationName: 'Kas',
 };
 
@@ -40,7 +40,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${jakarta.variable} ${fredoka.variable}`}>
+    <html lang="en" className={`${jakarta.variable} ${fredoka.variable}`}>
       <body className="min-h-dvh">
         <AuthGate>
           {/* Bottom padding clears the nav plus the home indicator. */}

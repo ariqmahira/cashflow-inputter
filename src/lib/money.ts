@@ -24,18 +24,16 @@ export function formatAmount(amount: number): string {
 }
 
 /**
- * Shortens large figures for tight spaces: `1,2 jt`, `450 rb`.
- *
- * Indonesian abbreviations, not `1.2M` — the audience is two people in Jakarta.
+ * Shortens large figures for tight spaces: `1.2M`, `450k`.
  */
 export function formatIdrShort(amount: number): string {
   const abs = Math.abs(amount);
   const sign = amount < 0 ? '-' : '';
   if (abs >= 1_000_000) {
-    const jt = abs / 1_000_000;
-    return `${sign}${jt.toFixed(jt >= 10 ? 0 : 1).replace('.', ',')} jt`;
+    const millions = abs / 1_000_000;
+    return `${sign}${millions.toFixed(millions >= 10 ? 0 : 1)}M`;
   }
-  if (abs >= 1_000) return `${sign}${Math.round(abs / 1_000)} rb`;
+  if (abs >= 1_000) return `${sign}${Math.round(abs / 1_000)}k`;
   return `${sign}${abs}`;
 }
 

@@ -73,7 +73,7 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
       onSaved();
       router.push('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan. Coba lagi.');
+      setError(err instanceof Error ? err.message : 'Could not save. Try again.');
       setSaving(false);
     }
   }
@@ -82,7 +82,7 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
     <>
       <div className="rounded-card bg-surface p-5">
         <label htmlFor="amount" className="block text-xs font-medium uppercase tracking-wide text-ink-faint">
-          Jumlah
+          Amount
         </label>
         <div className="mt-1 flex items-baseline gap-2">
           <span className="font-display text-2xl text-ink-faint">Rp</span>
@@ -103,7 +103,7 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
 
       <div className="mt-4 rounded-card bg-surface p-5">
         <label htmlFor="merchant" className="block text-xs font-medium uppercase tracking-wide text-ink-faint">
-          Beli di mana
+          Where
         </label>
         <input
           id="merchant"
@@ -134,7 +134,7 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
         )}
 
         <label htmlFor="place" className="mt-4 block text-xs font-medium uppercase tracking-wide text-ink-faint">
-          Lokasi <span className="normal-case tracking-normal">— boleh dikosongin</span>
+          Place <span className="normal-case tracking-normal">— optional</span>
         </label>
         <input
           id="place"
@@ -154,7 +154,7 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
 
       <fieldset className="mt-4 rounded-card bg-surface p-5">
         <legend className="text-xs font-medium uppercase tracking-wide text-ink-faint">
-          Kategori
+          Category
         </legend>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {categories.map((c) => {
@@ -179,13 +179,13 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
         </div>
         {matched && !touchedCategory && effectiveCategoryId && (
           <p className="mt-2.5 text-xs text-ink-faint">
-            Dipilih otomatis dari {matched.name}. Ganti kalau meleset.
+            Picked automatically from {matched.name}. Change it if it's wrong.
           </p>
         )}
       </fieldset>
 
       <div className="mt-4 rounded-card bg-surface p-5">
-        <DateField id="expense-date" label="Tanggal" value={occurredOn} onChange={setOccurredOn} />
+        <DateField id="expense-date" label="Date" value={occurredOn} onChange={setOccurredOn} />
       </div>
 
       {warning && warning.after.state !== 'ok' && categoryName && (
@@ -196,14 +196,14 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
         >
           {warning.after.state === 'over' ? (
             <>
-              Ini bikin <strong className="font-semibold">{categoryName}</strong> lewat anggaran —{' '}
-              <span className="tnum">{formatIdr(-warning.after.remaining)}</span> di atas batas.
+              This puts <strong className="font-semibold">{categoryName}</strong> over budget —{' '}
+              <span className="tnum">{formatIdr(-warning.after.remaining)}</span> above the limit.
             </>
           ) : (
             <>
-              Ini bikin <strong className="font-semibold">{categoryName}</strong> jadi{' '}
-              {Math.round(warning.after.ratio * 100)}% dari anggaran. Sisa{' '}
-              <span className="tnum">{formatIdr(warning.after.remaining)}</span>.
+              This brings <strong className="font-semibold">{categoryName}</strong> to{' '}
+              {Math.round(warning.after.ratio * 100)}% of its budget, with{' '}
+              <span className="tnum">{formatIdr(warning.after.remaining)}</span> left.
             </>
           )}
         </p>
@@ -217,7 +217,7 @@ export function ExpenseForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =
         disabled={!canSave || saving}
         className="mt-5 w-full rounded-pill bg-pandan px-5 py-3.5 font-display text-base text-white disabled:opacity-40"
       >
-        {saving ? 'Menyimpan…' : 'Simpan'}
+        {saving ? 'Saving…' : 'Save'}
       </button>
     </>
   );

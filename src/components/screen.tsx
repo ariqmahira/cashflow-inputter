@@ -29,13 +29,13 @@ export function Screen({ title, children, status = 'ready', error, onRetry, acti
         <div className="space-y-3" aria-busy="true" aria-live="polite">
           <div className="h-40 animate-pulse rounded-card bg-surface" />
           <div className="h-24 animate-pulse rounded-card bg-surface" />
-          <span className="sr-only">Memuat…</span>
+          <span className="sr-only">Loading…</span>
         </div>
       )}
 
       {status === 'error' && (
         <div className="rounded-card bg-teler-wash p-5">
-          <p className="font-display text-lg text-ink">Data nggak kebuka</p>
+          <p className="font-display text-lg text-ink">Couldn't load the data</p>
           <p className="mt-1 text-sm text-ink-soft">{error}</p>
           {onRetry && (
             <button
@@ -43,7 +43,7 @@ export function Screen({ title, children, status = 'ready', error, onRetry, acti
               onClick={onRetry}
               className="mt-4 rounded-pill bg-ink px-4 py-2 text-sm text-paper"
             >
-              Coba lagi
+              Try again
             </button>
           )}
         </div>

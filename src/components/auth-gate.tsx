@@ -61,7 +61,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (state.status === 'loading') {
     return (
       <div className="grid min-h-dvh place-items-center">
-        <p className="text-sm text-ink-faint">Memuat…</p>
+        <p className="text-sm text-ink-faint">Loading…</p>
       </div>
     );
   }
@@ -70,10 +70,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="mx-auto grid min-h-dvh max-w-sm place-items-center px-6 text-center">
         <div>
-          <h1 className="font-display text-2xl text-ink">Kas belum tersambung</h1>
+          <h1 className="font-display text-2xl text-ink">Kas is not connected</h1>
           <p className="mt-3 text-sm text-ink-soft">
-            Kunci Supabase belum ada waktu aplikasi ini dibuat. Jalankan{' '}
-            <code className="rounded bg-sunken px-1.5 py-0.5">vercel env pull</code> lalu build ulang.
+            The Supabase keys were missing when this app was built. Run{' '}
+            <code className="rounded bg-sunken px-1.5 py-0.5">vercel env pull</code> and rebuild.
           </p>
         </div>
       </div>

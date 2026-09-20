@@ -7,14 +7,14 @@ import { usePathname } from 'next/navigation';
  * Bottom navigation.
  *
  * Bottom rather than top because every interaction here happens one-handed, standing up, in
- * a mall. `Tambah` sits in the middle: it is the reason the app is opened.
+ * a mall. `Add` sits in the middle: it is the reason the app is opened.
  */
 const TABS = [
-  { href: '/', label: 'Beranda', icon: JarIcon },
-  { href: '/riwayat', label: 'Riwayat', icon: ListIcon },
-  { href: '/tambah', label: 'Tambah', icon: PlusIcon, primary: true },
-  { href: '/anggaran', label: 'Anggaran', icon: GaugeIcon },
-  { href: '/pengaturan', label: 'Atur', icon: GearIcon },
+  { href: '/', label: 'Home', icon: JarIcon },
+  { href: '/history', label: 'History', icon: ListIcon },
+  { href: '/add', label: 'Add', icon: PlusIcon, primary: true },
+  { href: '/budget', label: 'Budget', icon: GaugeIcon },
+  { href: '/settings', label: 'Settings', icon: GearIcon },
 ] as const;
 
 export function BottomNav() {
@@ -23,7 +23,7 @@ export function BottomNav() {
 
   return (
     <nav
-      aria-label="Navigasi utama"
+      aria-label="Main navigation"
       className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
       <ul className="mx-auto flex max-w-lg items-stretch justify-around px-2">

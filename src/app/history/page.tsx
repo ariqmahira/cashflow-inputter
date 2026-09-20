@@ -9,14 +9,14 @@ import { cycleFor, previousCycle, nextCycle, type Cycle } from '@/lib/cycle';
 import { formatIdr } from '@/lib/money';
 import { inCycle, netCost, type Entry, type Ledger } from '@/lib/queries';
 
-export default function Riwayat() {
+export default function History() {
   const ledgerState = useLedger();
   const { status, ledger, error, reload } = ledgerState;
   // null means "wherever the data is"; a number is an explicit choice by the user.
   const [offset, setOffset] = useState<number | null>(null);
 
   if (status !== 'ready') {
-    return <Screen title="Riwayat" status={status} error={error} onRetry={reload} />;
+    return <Screen title="History" status={status} error={error} onRetry={reload} />;
   }
 
   const anchor = ledger.settings.cycleAnchorDay;
@@ -29,7 +29,7 @@ export default function Riwayat() {
   const stepsFromNow = offset ?? cyclesBetween(ledger.cycle, newestWithEntries, anchor);
 
   return (
-    <Screen title="Riwayat">
+    <Screen title="History">
       <SyncStatus state={ledgerState} />
       <CycleSwitcher
         cycle={cycle}
@@ -76,9 +76,9 @@ function CycleSwitcher({
 }) {
   return (
     <div className="mb-4 flex items-center justify-between rounded-pill bg-surface p-1.5">
-      <Arrow label="Siklus sebelumnya" onClick={onPrev} dir="prev" enabled />
+      <Arrow label="Previous cycle" onClick={onPrev} dir="prev" enabled />
       <span className="text-sm font-medium text-ink">{cycleLabel(cycle)}</span>
-      <Arrow label="Siklus berikutnya" onClick={onNext} dir="next" enabled={canGoNext} />
+      <Arrow label="Next cycle" onClick={onNext} dir="next" enabled={canGoNext} />
     </div>
   );
 }
@@ -124,8 +124,8 @@ function CycleEntries({ ledger, cycle }: { ledger: Ledger; cycle: Cycle }) {
   if (inThis.length === 0) {
     return (
       <Empty
-        title="Siklus ini kosong"
-        hint="Nggak ada yang dicatat di rentang tanggal ini. Geser ke siklus sebelumnya buat lihat yang lama."
+        title="Nothing in this cycle"
+        hint="Nothing was recorded in this date range. Go back a cycle to see older entries."
       />
     );
   }
@@ -137,8 +137,8 @@ function CycleEntries({ ledger, cycle }: { ledger: Ledger; cycle: Cycle }) {
   return (
     <>
       <p className="mb-4 text-sm text-ink-soft">
-        <span className="tnum font-semibold text-ink">{formatIdr(spent)}</span> terpakai,{' '}
-        {inThis.filter((e) => e.kind === 'expense').length} catatan
+        <span className="tnum font-semibold text-ink">{formatIdr(spent)}</span> spent,{' '}
+        {inThis.filter((e) => e.kind === 'expense').length} entries
       </p>
 
       <div className="space-y-4">
@@ -180,7 +180,7 @@ function Row({
   repaid?: number;
 }) {
   const incoming = entry.kind !== 'expense';
-  const title = merchant ?? entry.note ?? (incoming ? 'Kas masuk' : 'Pengeluaran');
+  const title = merchant ?? entry.note ?? (incoming ? 'Kas in' : 'Expense');
 
   return (
     <li className="flex items-start justify-between gap-3 py-2.5">
@@ -190,15 +190,15 @@ function Row({
           {category && <span>{category}</span>}
           {entry.dateInferred && (
             <span
-              title="Tanggal ini ditebak saat migrasi dari spreadsheet lama"
+              title="This date was guessed during migration from the old spreadsheet"
               className="text-ink-faint"
             >
-              · tanggal ditebak
+              · date guessed
             </span>
           )}
           {repaid ? (
             <span className="rounded-pill bg-pandan-wash px-1.5 py-0.5 text-pandan-deep">
-              {formatIdr(repaid)} diganti
+              {formatIdr(repaid)} repaid
             </span>
           ) : null}
         </p>
@@ -227,7 +227,7 @@ function groupByDay(entries: Entry[]): [string, Entry[]][] {
 
 function longDate(date: string): string {
   const [y, m, d] = date.split('-').map(Number);
-  return new Intl.DateTimeFormat('id-ID', {
+  return new Intl.DateTimeFormat('en-GB', {
     weekday: 'short',
     day: 'numeric',
     month: 'long',
@@ -237,7 +237,7 @@ function longDate(date: string): string {
 function cycleLabel(cycle: Cycle): string {
   const fmt = (iso: string) => {
     const [y, m, d] = iso.split('-').map(Number);
-    return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(
+    return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(
       new Date(Date.UTC(y, m - 1, d)),
     );
   };

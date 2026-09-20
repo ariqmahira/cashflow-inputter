@@ -18,26 +18,26 @@ type Mode = 'expense' | 'income';
  * gesture ("write down what just happened"), and splitting them would put one of the two
  * behind a menu.
  */
-export default function Tambah() {
+export default function Add() {
   const ledgerState = useLedger();
   const { status, ledger, error, reload } = ledgerState;
   const [mode, setMode] = useState<Mode>('expense');
 
   if (status !== 'ready') {
-    return <Screen title="Tambah" status={status} error={error} onRetry={reload} />;
+    return <Screen title="Add" status={status} error={error} onRetry={reload} />;
   }
 
   return (
-    <Screen title="Tambah">
+    <Screen title="Add">
       <SyncStatus state={ledgerState} />
 
       <div
         role="tablist"
-        aria-label="Jenis catatan"
+        aria-label="Entry type"
         className="mb-4 flex gap-1 rounded-pill bg-sunken p-1"
       >
-        <Tab label="Pengeluaran" active={mode === 'expense'} onClick={() => setMode('expense')} />
-        <Tab label="Kas masuk" active={mode === 'income'} onClick={() => setMode('income')} />
+        <Tab label="Expense" active={mode === 'expense'} onClick={() => setMode('expense')} />
+        <Tab label="Kas in" active={mode === 'income'} onClick={() => setMode('income')} />
       </div>
 
       {mode === 'expense' ? (

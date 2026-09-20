@@ -58,7 +58,7 @@ export function useLedger(): LedgerState {
           setState({
             status: 'error',
             ledger: null,
-            error: err instanceof Error ? err.message : 'Gagal memuat data.',
+            error: err instanceof Error ? err.message : 'Could not load the data.',
           });
         }
       } finally {

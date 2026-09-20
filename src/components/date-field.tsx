@@ -40,8 +40,8 @@ export function DateField({
           onChange={(e) => e.target.value && onChange(e.target.value)}
           className="tnum min-w-0 flex-1 rounded-card border border-line bg-paper px-3.5 py-2.5 text-ink"
         />
-        <Quick label="Hari ini" active={value === today} onClick={() => onChange(today)} />
-        <Quick label="Kemarin" active={value === yesterday} onClick={() => onChange(yesterday)} />
+        <Quick label="Today" active={value === today} onClick={() => onChange(today)} />
+        <Quick label="Yesterday" active={value === yesterday} onClick={() => onChange(yesterday)} />
       </div>
     </div>
   );

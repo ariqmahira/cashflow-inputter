@@ -12,7 +12,7 @@ everything.
 ## Layout
 
 ```
-src/app/         screens: / · /tambah · /riwayat · /anggaran · /pengaturan
+src/app/         screens: / · /add · /history · /budget · /settings
 src/components/  UI, including the kas jar
 src/lib/         cycle + budget arithmetic, money formatting, Supabase access
 scripts/migrate/ one-time migration from the spreadsheet
@@ -131,7 +131,7 @@ See `src/lib/plain-date.ts`.
 **Amounts are whole rupiah.** `bigint` in Postgres, no fractional part anywhere.
 
 **116 dates are guessed.** Two in five rows in the old spreadsheet had no date at all. Those
-carry `date_inferred` and show a marker in Riwayat so they can be corrected.
+carry `date_inferred` and show a marker in History so they can be corrected.
 
 **Cycles run 25th to 24th**, not calendar months, because that is when the kas is topped up.
 The anchor is capped at 28 — a 29th does not exist every February.

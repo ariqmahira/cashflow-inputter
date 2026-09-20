@@ -86,8 +86,8 @@ async function withTimeout<T>(work: Promise<T>, ms: number, what: string): Promi
  * the app unable to say anything at all: not refreshed, not stale, just waiting forever.
  */
 export async function syncNow(): Promise<LocalLedger> {
-  await withTimeout(drain(), SYNC_TIMEOUT_MS, 'Mengirim catatan');
-  const fresh = await withTimeout(fetchLedger(), SYNC_TIMEOUT_MS, 'Memuat data');
+  await withTimeout(drain(), SYNC_TIMEOUT_MS, 'Sending entries');
+  const fresh = await withTimeout(fetchLedger(), SYNC_TIMEOUT_MS, 'Loading data');
   await writeCache(fresh);
   return { ...fresh, cachedAt: null, pendingWrites: (await pending()).length };
 }

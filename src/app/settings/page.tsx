@@ -9,45 +9,45 @@ import { formatIdr } from '@/lib/money';
 import { poolBalance } from '@/lib/queries';
 import { supabase } from '@/lib/supabase';
 
-export default function Pengaturan() {
+export default function Settings() {
   const ledgerState = useLedger();
   const { status, ledger, error, reload } = ledgerState;
   const [signingOut, setSigningOut] = useState(false);
 
   if (status !== 'ready') {
-    return <Screen title="Pengaturan" status={status} error={error} onRetry={reload} />;
+    return <Screen title="Settings" status={status} error={error} onRetry={reload} />;
   }
 
   const { entries, settings, cycle } = ledger;
   const inferred = entries.filter((e) => e.dateInferred).length;
 
   return (
-    <Screen title="Pengaturan">
+    <Screen title="Settings">
       <SyncStatus state={ledgerState} />
       <section className="rounded-card bg-surface p-5">
-        <h2 className="font-display text-base text-ink">Siklus</h2>
+        <h2 className="font-display text-base text-ink">Cycle</h2>
         <dl className="mt-3 space-y-2 text-sm">
-          <Row label="Mulai tanggal" value={String(settings.cycleAnchorDay)} />
-          <Row label="Siklus ini" value={`${cycle.start} → ${cycle.end}`} />
-          <Row label="Peringatan di" value={`${Math.round(settings.warnThreshold * 100)}%`} />
+          <Row label="Starts on day" value={String(settings.cycleAnchorDay)} />
+          <Row label="This cycle" value={`${cycle.start} → ${cycle.end}`} />
+          <Row label="Warn at" value={`${Math.round(settings.warnThreshold * 100)}%`} />
         </dl>
         <p className="mt-3 text-xs text-ink-faint">
-          Siklus ikut tanggal kas masuk, bukan tanggal 1 — soalnya uangnya memang datang
-          tanggal segitu.
+          The cycle follows the day the kas comes in, not the 1st — because that's when the
+          money actually arrives.
         </p>
       </section>
 
       <section className="mt-4 rounded-card bg-surface p-5">
         <h2 className="font-display text-base text-ink">Data</h2>
         <dl className="mt-3 space-y-2 text-sm">
-          <Row label="Total catatan" value={String(entries.length)} />
-          <Row label="Sisa kas" value={formatIdr(poolBalance(entries))} />
-          <Row label="Tanggal ditebak" value={String(inferred)} />
+          <Row label="Total entries" value={String(entries.length)} />
+          <Row label="Kas balance" value={formatIdr(poolBalance(entries))} />
+          <Row label="Guessed dates" value={String(inferred)} />
         </dl>
         {inferred > 0 && (
           <p className="mt-3 text-xs text-ink-faint">
-            {inferred} catatan dari spreadsheet lama nggak punya tanggal, jadi ditebak dari baris
-            terdekat. Tandanya kelihatan di Riwayat kalau mau dibetulin.
+            {inferred} entries from the old spreadsheet had no date, so it was guessed from the
+            nearest row. They're marked in History if you want to fix them.
           </p>
         )}
       </section>
@@ -61,7 +61,7 @@ export default function Pengaturan() {
         }}
         className="mt-4 w-full rounded-pill border border-line bg-surface px-5 py-3 text-sm text-ink disabled:opacity-50"
       >
-        {signingOut ? 'Keluar…' : 'Keluar'}
+        {signingOut ? 'Signing out…' : 'Sign out'}
       </button>
     </Screen>
   );

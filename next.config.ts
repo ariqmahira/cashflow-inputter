@@ -13,7 +13,7 @@ const config: NextConfig = {
    */
   output: 'export',
 
-  // Static hosting serves `/tambah/index.html` rather than `/tambah`, and Capacitor's
+  // Static hosting serves `/add/index.html` rather than `/add`, and Capacitor's
   // file:// origin needs the same.
   trailingSlash: true,
 

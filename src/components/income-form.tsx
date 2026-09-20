@@ -11,7 +11,7 @@ import { saveContribution } from '@/lib/sync';
 /**
  * Recording money into the kas by hand.
  *
- * The one-tap prompt on Beranda covers the usual monthly top-up at the usual amount. This is
+ * The one-tap prompt on Home covers the usual monthly top-up at the usual amount. This is
  * for everything else: a month somebody put in more or less than usual, a top-up remembered
  * three days late, money added mid-cycle to cover something.
  *
@@ -54,7 +54,7 @@ export function IncomeForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =>
       onSaved();
       router.push('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan. Coba lagi.');
+      setError(err instanceof Error ? err.message : 'Could not save. Try again.');
       setSaving(false);
     }
   }
@@ -63,7 +63,7 @@ export function IncomeForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =>
     <>
       <div className="rounded-card bg-surface p-5">
         <label htmlFor="kas-amount" className="block text-xs font-medium uppercase tracking-wide text-ink-faint">
-          Jumlah
+          Amount
         </label>
         <div className="mt-1 flex items-baseline gap-2">
           <span className="font-display text-2xl text-ink-faint">Rp</span>
@@ -87,14 +87,14 @@ export function IncomeForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =>
             onClick={() => setAmountText(formatAmount(usual))}
             className="mt-3 rounded-pill bg-sunken px-3 py-1.5 text-sm text-ink"
           >
-            Biasanya {formatIdr(usual)}
+            Usually {formatIdr(usual)}
           </button>
         )}
       </div>
 
       <fieldset className="mt-4 rounded-card bg-surface p-5">
         <legend className="text-xs font-medium uppercase tracking-wide text-ink-faint">
-          Dari siapa
+          From
         </legend>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {members.map((m) => (
@@ -116,24 +116,24 @@ export function IncomeForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =>
           // Not an error — putting in twice is allowed — but worth saying, since forgetting
           // whether it was recorded is exactly why someone opens this screen.
           <p className="mt-2.5 text-xs text-gula">
-            {memberName} sudah tercatat masuk siklus ini.
+            {memberName} is already recorded as paid in this cycle.
           </p>
         )}
       </fieldset>
 
       <div className="mt-4 space-y-4 rounded-card bg-surface p-5">
-        <DateField id="kas-date" label="Tanggal" value={occurredOn} onChange={setOccurredOn} />
+        <DateField id="kas-date" label="Date" value={occurredOn} onChange={setOccurredOn} />
 
         <div>
           <label htmlFor="kas-note" className="block text-xs font-medium uppercase tracking-wide text-ink-faint">
-            Catatan <span className="normal-case tracking-normal">— boleh dikosongin</span>
+            Note <span className="normal-case tracking-normal">— optional</span>
           </label>
           <input
             id="kas-note"
             autoComplete="off"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Kas bulanan"
+            placeholder="Monthly kas"
             className="mt-1.5 w-full rounded-card border border-line bg-paper px-3.5 py-2.5 text-ink placeholder:text-ink-faint"
           />
         </div>
@@ -141,7 +141,7 @@ export function IncomeForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =>
 
       {amount && amount > 0 && (
         <p className="mt-4 text-sm text-ink-soft">
-          Kas siklus ini jadi{' '}
+          This cycle's kas comes to{' '}
           <span className="tnum font-semibold text-ink">
             {formatIdr(cycleContributions(entries, cycle) + amount)}
           </span>
@@ -157,7 +157,7 @@ export function IncomeForm({ ledger, onSaved }: { ledger: Ledger; onSaved: () =>
         disabled={!canSave || saving}
         className="mt-5 w-full rounded-pill bg-pandan px-5 py-3.5 font-display text-base text-white disabled:opacity-40"
       >
-        {saving ? 'Menyimpan…' : 'Simpan kas masuk'}
+        {saving ? 'Saving…' : 'Save kas in'}
       </button>
     </>
   );
